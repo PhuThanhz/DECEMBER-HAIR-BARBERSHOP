@@ -1,0 +1,6 @@
+/* Runtime CSS variables (ngoài @theme) — dùng cho hiệu ứng & layout. */
+:root {
+  --header-h: 84px;
+  --grain-opacity: 0.06;
+  --arch-radius: 999px 999px 0 0;
+}

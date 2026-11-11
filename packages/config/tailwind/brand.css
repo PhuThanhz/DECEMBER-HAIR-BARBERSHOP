@@ -1,0 +1,27 @@
+/*
+ * December Hair — brand design tokens (Tailwind v4 @theme).
+ * Màu rút từ logo (bạc / vàng champagne) và nội thất (travertine, da nâu, cây xanh).
+ * Import trong app:  @import "@december/config/tailwind/brand.css";
+ */
+@theme {
+  --color-ivory: #f6f2ec;
+  --color-bone: #ede6dc;
+  --color-travertine: #d9cbb8;
+  --color-sand: #b9a58c;
+  --color-leather: #6b4a3a;
+  --color-cocoa: #4a3428;
+  --color-espresso: #2b211c;
+  --color-ink: #17120f;
+  --color-gold: #d9c27a;
+  --color-gold-soft: #ecdcaa;
+  --color-silver: #c8c8ca;
+  --color-sage: #5e6b4e;
+
+  --font-display: var(--font-cormorant), "Cormorant Garamond", ui-serif, Georgia, serif;
+  --font-sans: var(--font-manrope), "Manrope", ui-sans-serif, system-ui, sans-serif;
+
+  --ease-luxe: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-silk: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --tracking-luxe: 0.32em;
+}

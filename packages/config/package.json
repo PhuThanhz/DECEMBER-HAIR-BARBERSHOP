@@ -1,0 +1,11 @@
+{
+  "name": "@december/config",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./tsconfig/base.json": "./tsconfig/base.json",
+    "./tsconfig/nextjs.json": "./tsconfig/nextjs.json",
+    "./tsconfig/react-library.json": "./tsconfig/react-library.json",
+    "./tailwind/brand.css": "./tailwind/brand.css"
+  }
+}

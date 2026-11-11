@@ -1,0 +1,1 @@
+{ "extends": "@december/config/tsconfig/react-library.json", "include": ["src"] }
