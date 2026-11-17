@@ -21,6 +21,18 @@ export const hairImages = {
   scissorCut: hair("craft-scissor-cut", 1400, 1750),
   clipper: hair("craft-clipper", 1400, 933),
   chair: hair("craft-chair", 1400, 933),
+  // Ảnh thật do chủ tiệm cung cấp
+  texturedCrop: hair("style-textured-crop", 1024, 1024),
+  afroFade: hair("style-afro-fade", 415, 739),
+  burstFade: hair("style-burst-fade", 461, 665),
+  slickLowFade: hair("style-slick-low-fade", 1500, 2000),
+  sidePartFade: hair("style-side-part-fade", 1200, 1800),
+  fadeBokeh: hair("craft-fade-bokeh", 866, 577),
+  taperClipper: hair("craft-taper-clipper", 1250, 1000),
+  clipperDetail: hair("craft-clipper-detail", 1024, 1024),
+  razorShave: hair("craft-razor-shave", 1000, 1000),
+  beardClipper: hair("craft-beard-clipper", 940, 627),
+  neckRazor: hair("craft-neck-razor", 1024, 683),
 } as const;
 
 /** Lookbook — tên & nhãn: dict.styles.items[id]. */
@@ -39,40 +51,65 @@ export const hairStyles = [
 export type HairStyleId = (typeof hairStyles)[number]["id"];
 
 /**
+ * Lookbook nhiều mẫu tóc (section <Lookbook/>) — 2 hàng chạy ngược chiều.
+ * Tên & nhãn: dict.styles.items[id]. Xen kẽ ảnh thật của tiệm với ảnh minh hoạ.
+ */
+export const lookbookRows = [
+  [
+    { id: "lowFadeSlick", image: hairImages.slickLowFade },
+    { id: "texturedQuiff", image: hairImages.texturedQuiff },
+    { id: "afroFade", image: hairImages.afroFade },
+    { id: "pompadourFade", image: hairImages.pompadourFade },
+    { id: "texturedCrop", image: hairImages.texturedCrop },
+    { id: "buzzCut", image: hairImages.buzzCut },
+    { id: "naturalFlow", image: hairImages.naturalFlow },
+  ],
+  [
+    { id: "hardPartFade", image: hairImages.sidePartFade },
+    { id: "beardFade", image: hairImages.beardFade },
+    { id: "burstFade", image: hairImages.burstFade },
+    { id: "slickBack", image: hairImages.slickBack },
+    { id: "frenchCrop", image: hairImages.frenchCrop },
+    { id: "modernTaper", image: hairImages.modernTaper },
+    { id: "sidePart", image: hairImages.sidePart },
+  ],
+] as const;
+
+/**
  * Chuỗi section "Signature" — mỗi kiểu tóc một section riêng với bảng màu đặc trưng.
- * bg: nền · ink: màu chữ · accent: màu nhấn · theme: để header/rail đổi màu chữ.
+ * focus: object-position của ảnh · bg: nền · ink: màu chữ · accent: màu nhấn · theme: để header/rail đổi màu chữ.
  * Nội dung chữ: dict.features.items[id].
  */
 export const featureStyles = [
   {
-    id: "texturedQuiff",
-    image: hairImages.texturedQuiff,
-    detail: hairImages.scissorCut,
-    palette: { bg: "#1f3a2e", ink: "#eef3ea", accent: "#c9d98a", theme: "dark" },
+    id: "slickBack",
+    image: hairImages.slickLowFade,
+    focus: "50% 35%",
+    palette: { bg: "#2E211B", ink: "#F6F2EC", accent: "#E4CD89", theme: "dark" },
   },
   {
-    id: "modernTaper",
-    image: hairImages.modernTaper,
-    detail: hairImages.clipper,
-    palette: { bg: "#5b1f26", ink: "#f8ebe6", accent: "#f2b29b", theme: "dark" },
+    id: "sidePart",
+    image: hairImages.sidePartFade,
+    focus: "50% 30%",
+    palette: { bg: "#1C1613", ink: "#F6F2EC", accent: "#D9C27A", theme: "dark" },
+  },
+  {
+    id: "frenchCrop",
+    image: hairImages.frenchCrop,
+    focus: "50% 30%",
+    palette: { bg: "#E6DDD0", ink: "#17120F", accent: "#6B4A3A", theme: "light" },
   },
   {
     id: "beardFade",
     image: hairImages.beardFade,
-    detail: hairImages.beardTrim,
-    palette: { bg: "#14233a", ink: "#e8f0fa", accent: "#8fc3ea", theme: "dark" },
+    focus: "45% 35%",
+    palette: { bg: "#222923", ink: "#F3F0EA", accent: "#D9C27A", theme: "dark" },
   },
   {
-    id: "slickBack",
-    image: hairImages.slickBack,
-    detail: hairImages.shears,
-    palette: { bg: "#b2552f", ink: "#fff4ea", accent: "#ffd29a", theme: "dark" },
-  },
-  {
-    id: "naturalFlow",
-    image: hairImages.naturalFlow,
-    detail: hairImages.razorLine,
-    palette: { bg: "#d8a93b", ink: "#1d1608", accent: "#1d1608", theme: "light" },
+    id: "modernTaper",
+    image: hairImages.modernTaper,
+    focus: "50% 35%",
+    palette: { bg: "#F4EFE6", ink: "#17120F", accent: "#6B4A3A", theme: "light" },
   },
 ] as const;
 

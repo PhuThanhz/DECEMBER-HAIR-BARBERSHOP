@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  devIndicators: false,
   transpilePackages: ["@december/ui", "@december/types"],
   images: {
     formats: ["image/avif", "image/webp"],

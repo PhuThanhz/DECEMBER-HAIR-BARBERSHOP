@@ -1,7 +1,7 @@
 import { cn } from "@/lib/cn";
 import { LogoD, type LogoDTone } from "./logo-d";
 
-/** Logo ngang: chữ D (SVG) + "ecember" serif + dòng phụ "Barber Shop". */
+/** Logo ngang: chữ D (SVG) + "ecember" serif + dòng phụ "Barber". */
 export function Wordmark({
   tone = "gold",
   className,
@@ -18,7 +18,7 @@ export function Wordmark({
         <span className="font-display text-[1em] font-normal tracking-[0.02em]">ecember</span>
         {showSub && (
           <span className="mt-1 self-end text-[0.24em] font-medium tracking-[0.42em] uppercase opacity-70">
-            Barber Shop
+            Barber
           </span>
         )}
       </span>

@@ -61,7 +61,12 @@ export function SplitReveal({
   );
 
   return (
-    <Tag ref={ref} className={className} style={play ? undefined : { visibility: "hidden" }}>
+    <Tag
+      ref={ref}
+      className={className}
+      data-reveal=""
+      style={play ? undefined : { visibility: "hidden" }}
+    >
       {children}
     </Tag>
   );

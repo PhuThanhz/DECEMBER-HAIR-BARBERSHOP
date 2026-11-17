@@ -1,153 +1,352 @@
 "use client";
 
-import { useRef } from "react";
-import { Section } from "@/components/layout/section";
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useState } from "react";
 import { LogoD } from "@/components/brand/logo-d";
-import { Magnetic, Reveal, SplitReveal } from "@/components/motion";
-import { site, telHref } from "@/content/site";
+import { BrandMap } from "@/components/ui/brand-map";
+import { Section } from "@/components/layout/section";
+import { Reveal, SplitReveal } from "@/components/motion";
+import { WhatsAppIcon } from "@/components/brand/whatsapp-icon";
+import { ctaDark, ctaGlass, ctaGold } from "@/components/ui/cta";
+import { isOpened, site, telHref } from "@/content/site";
 import { useDictionary } from "@/i18n/dictionary-provider";
-import { gsap, useGSAP } from "@/lib/gsap";
+import { useBookingSelection } from "@/lib/booking-selection";
+import { cn } from "@/lib/cn";
+import { scrollToId } from "@/lib/scroll";
+
+const ease = [0.22, 1, 0.36, 1] as const;
+/** Toạ độ tiệm [kinh độ, vĩ độ] — Václavské náměstí 1. */
+const MAP_CENTER: [number, number] = [14.423985, 50.083844];
+
+interface PragueStatus {
+  time: string;
+  isWeekend: boolean;
+  isOpen: boolean;
+}
+
+function getPragueStatus(): PragueStatus {
+  const now = new Date();
+  const time = new Intl.DateTimeFormat("cs-CZ", {
+    timeZone: "Europe/Prague",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(now);
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Prague",
+    weekday: "short",
+  }).format(now);
+  const [hStr = "0", mStr = "0"] = time.split(":");
+  const mins = Number(hStr) * 60 + Number(mStr);
+  const isWeekend = weekday === "Sat" || weekday === "Sun";
+  const schedule = isWeekend ? site.hours[1]! : site.hours[0]!;
+  const [oh = 9, om = 0] = schedule.open.split(":").map(Number);
+  const [ch = 21, cm = 0] = schedule.close.split(":").map(Number);
+  const isOpen = mins >= oh * 60 + om && mins < ch * 60 + cm;
+  return { time, isWeekend, isOpen };
+}
 
 /**
- * Đặt lịch + Liên hệ trong một section:
- * - Chữ D vàng lớn tự vẽ theo cuộn, tiêu đề lớn, 3 nút (gọi / WhatsApp / chỉ đường).
- * - Bên dưới: địa chỉ, giờ mở cửa, liên hệ + bản đồ.
- * Giai đoạn 1 chưa có backend → chưa có form đặt lịch online.
+ * Chương cuối — Đặt chỗ & ghé thăm (gộp Opening + Booking + Contact cũ).
+ * Trái (#booking): lựa chọn đang chọn, 2 kênh đặt lịch, cam kết, dải ưu đãi khai trương.
+ * Phải: địa chỉ, giờ mở cửa, liên hệ và bản đồ MapLibre (ghim logo D, một nút chỉ đường).
  */
 export function Contact() {
-  const ref = useRef<HTMLElement>(null);
   const { dict } = useDictionary();
+  const { selection, selectBooking } = useBookingSelection();
+  const [status, setStatus] = useState<PragueStatus | null>(null);
+  const b = dict.booking;
+  const o = dict.opening;
 
-  const actions = [
-    { label: dict.booking.call, sub: site.phone, href: telHref },
-    { label: dict.booking.whatsapp, sub: dict.booking.whatsappSub, href: site.whatsapp },
-    { label: dict.booking.directions, sub: dict.booking.directionsSub, href: site.mapLink },
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setStatus(getPragueStatus());
+    const id = setInterval(() => setStatus(getPragueStatus()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const service = selection ? `${selection.title} (${selection.meta})` : b.defaultService;
+  const whatsappUrl = `${site.whatsapp}?text=${encodeURIComponent(`${b.whatsappPrefill} ${service}`)}`;
+
+  const channels = [
+    {
+      title: b.whatsapp,
+      sub: b.whatsappSub,
+      cta: b.whatsappCta,
+      href: whatsappUrl,
+      external: true,
+    },
+    { title: b.call, sub: b.callSub, cta: b.callCta, href: telHref, external: false },
   ];
 
-  useGSAP(
-    () => {
-      gsap.matchMedia().add("(prefers-reduced-motion: no-preference)", () => {
-        const strands = gsap.utils.toArray<SVGPathElement>(".ct-d .logo-d__strand", ref.current);
-        strands.forEach((p) => {
-          const len = p.getTotalLength();
-          gsap.set(p, { strokeDasharray: len, strokeDashoffset: len });
-        });
-        gsap
-          .timeline({
-            scrollTrigger: { trigger: ref.current, start: "top 75%", end: "top top", scrub: 1 },
-          })
-          .to(strands, { strokeDashoffset: 0, stagger: 0.04, ease: "none" })
-          .fromTo(".ct-d", { scale: 0.85, rotate: -6 }, { scale: 1, rotate: 0, ease: "none" }, 0);
-      });
-    },
-    { scope: ref },
-  );
+  const claim = () => {
+    selectBooking({
+      kind: "service",
+      id: "december-ritual",
+      title: o.selectionPrefix,
+      meta: o.selectionMeta,
+    });
+    scrollToId("booking");
+  };
+
+  const statusText = !status
+    ? null
+    : !isOpened
+      ? dict.location.openingSoon
+      : status.isOpen
+        ? dict.location.openNow
+        : dict.location.closedNow;
 
   return (
     <Section
-      ref={ref}
       id="contact"
       theme="dark"
-      className="bg-espresso text-ivory overflow-hidden pt-32 pb-28 md:pt-44 md:pb-36"
+      fit={false}
+      className="bg-ink text-ivory overflow-hidden py-24 lg:py-32"
     >
-      <LogoD
-        tone="gold"
-        strandsOnly
-        strandWidth={1.6}
-        aria-hidden
-        className="ct-d pointer-events-none absolute top-0 left-1/2 h-[70vh] w-auto -translate-x-1/2 opacity-40"
-      />
-
-      <div className="relative mx-auto max-w-[1440px] px-6 md:px-10 lg:px-16">
-        {/* Kêu gọi đặt lịch */}
-        <div className="text-center">
-          <p className="text-gold text-[11px] tracking-[0.42em] uppercase">
-            {dict.booking.eyebrow}
-          </p>
+      <div className="mx-auto w-full max-w-[1600px] px-6 md:px-10 lg:px-16">
+        {/* Tiêu đề */}
+        <div className="grid gap-6 md:grid-cols-12 md:items-end">
           <SplitReveal
             as="h2"
             type="words"
-            className="font-display mx-auto mt-8 max-w-5xl text-[clamp(3rem,7.5vw,7.5rem)] leading-[0.95] font-medium"
+            className="font-display text-[clamp(2.4rem,4.8vw,5rem)] leading-[0.95] font-normal text-balance md:col-span-7"
           >
-            {dict.booking.title}
+            {b.title}
           </SplitReveal>
-          <p className="text-ivory/60 mx-auto mt-8 max-w-md">{dict.booking.lead}</p>
-
-          <div className="mt-14 flex flex-col items-stretch justify-center gap-4 sm:flex-row sm:items-center">
-            {actions.map((a, i) => (
-              <Magnetic key={a.label} strength={0.25}>
-                <a
-                  href={a.href}
-                  target={a.href.startsWith("http") ? "_blank" : undefined}
-                  rel="noreferrer"
-                  className={
-                    i === 0
-                      ? "bg-gold text-ink hover:bg-ivory flex min-w-60 flex-col items-center rounded-full px-10 py-5 transition-colors duration-500"
-                      : "border-ivory/25 hover:border-gold hover:text-gold flex min-w-60 flex-col items-center rounded-full border px-10 py-5 transition-colors duration-500"
-                  }
-                >
-                  <span className="text-[12px] font-semibold tracking-[0.24em] uppercase">
-                    {a.label}
-                  </span>
-                  <span className="mt-1 text-xs opacity-60">{a.sub}</span>
-                </a>
-              </Magnetic>
-            ))}
-          </div>
+          <Reveal className="md:col-span-5 md:pb-2">
+            <p className="text-ivory/70 text-sm leading-relaxed text-pretty md:text-base">
+              {b.lead}
+            </p>
+          </Reveal>
         </div>
 
-        {/* Địa chỉ, giờ mở cửa, bản đồ */}
-        <div className="border-ivory/10 mt-28 grid gap-12 border-t pt-16 lg:mt-36 lg:grid-cols-12">
-          <Reveal stagger={0.1} className="space-y-10 lg:col-span-5">
-            <h3 className="font-display text-[clamp(2.2rem,4vw,3.6rem)] leading-none font-medium">
-              {dict.location.title}
-            </h3>
-            <address className="not-italic">
-              <p className="text-gold text-[11px] tracking-[0.28em] uppercase">
-                {dict.location.address}
-              </p>
-              <p className="font-display mt-3 text-2xl">{site.address}</p>
-            </address>
-            <div>
-              <p className="text-gold text-[11px] tracking-[0.28em] uppercase">
-                {dict.location.hours}
-              </p>
-              <dl className="divide-ivory/10 border-ivory/10 mt-3 divide-y border-y">
-                {site.hours.map((h) => (
-                  <div key={h.key} className="flex justify-between py-3">
-                    <dt className="text-ivory/80">{dict.hours[h.key]}</dt>
-                    <dd className="font-display text-xl tabular-nums">
-                      {h.open} — {h.close}
-                    </dd>
+        <div className="mt-12 grid gap-16 lg:grid-cols-12 lg:gap-16">
+          {/* Trái — đặt lịch */}
+          <div id="booking" className="scroll-mt-28 lg:col-span-6">
+            <AnimatePresence initial={false}>
+              {selection && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0, transition: { duration: 0.5, ease } }}
+                  exit={{ opacity: 0, y: -6, transition: { duration: 0.25 } }}
+                  className="mb-8"
+                  aria-live="polite"
+                >
+                  <p className="font-display text-gold text-base italic">{b.selectedLabel}</p>
+                  <p className="font-display mt-1 text-2xl">{selection.title}</p>
+                  <div className="mt-1 flex items-center gap-4">
+                    <span className="text-ivory/60 text-xs">{selection.meta}</span>
+                    <button
+                      type="button"
+                      onClick={() => selectBooking(null)}
+                      className="text-ivory/60 hover:text-gold text-xs transition-colors"
+                    >
+                      {dict.common.clear}
+                    </button>
                   </div>
-                ))}
-              </dl>
-            </div>
-            <div className="text-ivory/80 flex flex-wrap gap-x-10 gap-y-4">
-              <a
-                href={telHref}
-                className="border-ivory/30 hover:border-gold hover:text-gold border-b pb-1 transition-colors"
-              >
-                {site.phone}
-              </a>
-              <a
-                href={`mailto:${site.email}`}
-                className="border-ivory/30 hover:border-gold hover:text-gold border-b pb-1 transition-colors"
-              >
-                {site.email}
-              </a>
-            </div>
-          </Reveal>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          <Reveal className="relative min-h-[380px] overflow-hidden rounded-[2rem] lg:col-span-7">
-            <iframe
-              title={dict.location.mapTitle}
-              src={site.mapEmbedUrl}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              className="absolute inset-0 h-full w-full border-0 [filter:grayscale(1)_invert(0.9)_sepia(0.35)_contrast(0.9)]"
-            />
-          </Reveal>
+            <Reveal stagger={0.1} as="ul" className="flex flex-col gap-3">
+              {channels.map((c, i) => {
+                const isWa = i === 0;
+                return (
+                  <li
+                    key={c.title}
+                    className={cn(
+                      "relative overflow-hidden rounded-3xl",
+                      // WhatsApp: tấm nền espresso với logo WhatsApp lớn chìm phía sau
+                      isWa ? "bg-espresso px-6 sm:px-8" : "px-6 sm:px-8",
+                    )}
+                  >
+                    {isWa && (
+                      <WhatsAppIcon className="pointer-events-none absolute -right-8 -bottom-10 size-48 text-[#25D366] opacity-[0.09] sm:size-56" />
+                    )}
+                    <a
+                      href={c.href}
+                      {...(c.external ? { target: "_blank", rel: "noreferrer" } : {})}
+                      className="group relative flex flex-col gap-5 py-7 sm:flex-row sm:items-center sm:justify-between lg:py-8"
+                    >
+                      <span>
+                        <span className="font-display group-hover:text-gold block text-[clamp(1.6rem,2.4vw,2.2rem)] leading-tight transition-colors duration-300">
+                          {c.title}
+                        </span>
+                        <span className="text-ivory/60 mt-1.5 block text-sm">{c.sub}</span>
+                      </span>
+                      {isWa ? (
+                        <span
+                          className={cn(
+                            ctaGold,
+                            "shrink-0 bg-[#25D366] text-[#0B1F14] group-hover:bg-[#2EE071] hover:bg-[#2EE071]",
+                          )}
+                        >
+                          <WhatsAppIcon className="size-5" />
+                          {c.cta}
+                        </span>
+                      ) : (
+                        <span className={cn(ctaGlass, "group-hover:bg-ivory/[0.18] shrink-0")}>
+                          {c.cta}
+                        </span>
+                      )}
+                    </a>
+                  </li>
+                );
+              })}
+            </Reveal>
+
+            <ul className="text-ivory/60 mt-6 flex flex-wrap gap-x-8 gap-y-2 text-xs tracking-wider">
+              {b.guarantee.map((g) => (
+                <li key={g}>{g}</li>
+              ))}
+            </ul>
+
+            {/* Ưu đãi khai trương — gọn: tiêu đề, 3 đặc quyền một dòng, một lời mời */}
+            <div className="mt-12">
+              <p className="font-display text-gold text-[clamp(1.5rem,2.2vw,2rem)] leading-tight italic">
+                {o.title}
+              </p>
+              <Reveal stagger={0.08} as="ol" className="mt-5 flex flex-col gap-2.5">
+                {o.privileges.map((p) => (
+                  <li
+                    key={p.num}
+                    className="font-display text-ivory/85 flex items-baseline gap-3 text-lg"
+                  >
+                    <span className="text-gold/70 w-5 text-xs italic tabular-nums">{p.num}</span>
+                    {p.title}
+                  </li>
+                ))}
+              </Reveal>
+              <button type="button" onClick={claim} className={cn(ctaGold, "mt-7")}>
+                {o.cta}
+              </button>
+            </div>
+          </div>
+
+          {/* Phải — ghé thăm */}
+          <div className="flex flex-col lg:col-span-6">
+            <p className="text-ivory/70 flex min-h-[1.25rem] flex-wrap items-center gap-x-2 text-[11px] tracking-[0.22em] uppercase">
+              {statusText && (
+                <>
+                  <span>{statusText}</span>
+                  <span className="text-ivory/45 tabular-nums">
+                    · {dict.location.pragueTime} {status?.time}
+                  </span>
+                </>
+              )}
+            </p>
+
+            <div className="mt-5 grid gap-6 sm:grid-cols-2">
+              <div className="py-2">
+                <p className="text-gold text-[10px] tracking-[0.3em] uppercase">
+                  {dict.location.address}
+                </p>
+                <p className="font-display mt-2 text-xl leading-snug">{site.address}</p>
+                <div className="mt-3 flex flex-col gap-1.5 text-sm">
+                  <a
+                    href={telHref}
+                    className="hover:text-gold w-fit tabular-nums transition-colors"
+                  >
+                    {site.phone}
+                  </a>
+                  <a
+                    href={`mailto:${site.email}`}
+                    className="hover:text-gold w-fit transition-colors"
+                  >
+                    {site.email}
+                  </a>
+                </div>
+              </div>
+
+              <div className="py-2">
+                <p className="text-gold text-[10px] tracking-[0.3em] uppercase">
+                  {dict.location.hours}
+                </p>
+                <dl className="mt-2">
+                  {site.hours.map((h) => {
+                    const isToday =
+                      status !== null &&
+                      ((h.key === "weekend" && status.isWeekend) ||
+                        (h.key === "weekdays" && !status.isWeekend));
+                    return (
+                      <div key={h.key} className="py-1">
+                        <dt
+                          className={cn(
+                            "flex items-center gap-3 text-sm",
+                            isToday ? "text-ivory" : "text-ivory/60",
+                          )}
+                        >
+                          {dict.hours[h.key]}
+                          {isToday && (
+                            <span className="text-gold text-[9px] tracking-[0.26em] uppercase">
+                              {dict.common.today}
+                            </span>
+                          )}
+                        </dt>
+                        <dd
+                          className={cn(
+                            "font-display text-xl tabular-nums",
+                            isToday ? "text-gold" : "text-ivory/75",
+                          )}
+                        >
+                          {h.open} — {h.close}
+                        </dd>
+                      </div>
+                    );
+                  })}
+                </dl>
+              </div>
+            </div>
+
+            {/* Bản đồ — MapLibre + OpenFreeMap (màu tự nhiên), ghim logo D, nhãn trên nền tối để luôn đọc rõ */}
+            <div className="bg-espresso relative mt-3 h-[420px] w-full overflow-hidden rounded-3xl sm:h-[480px] lg:h-auto lg:min-h-[480px] lg:flex-1">
+              <BrandMap
+                center={MAP_CENTER}
+                zoom={16.2}
+                label={dict.location.mapTitle}
+                pin={
+                  <div className="pointer-events-none flex flex-col items-center">
+                    <div className="bg-ink rounded-xl p-2 shadow-[0_6px_20px_rgba(23,18,15,0.35)]">
+                      <LogoD tone="gold" className="h-7 w-auto" strandWidth={3} />
+                    </div>
+                    <div className="bg-ink h-4 w-0.5" />
+                    <div className="bg-ink size-2 rounded-full" />
+                  </div>
+                }
+                fallback={
+                  <a
+                    href={site.mapLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-ivory/80 hover:text-gold flex size-full items-center justify-center text-sm transition-colors"
+                  >
+                    {dict.common.openMaps}
+                  </a>
+                }
+              />
+              {/* Nhãn địa danh trên tấm kính tối (nổi trên bản đồ) */}
+              <div className="bg-ink/75 pointer-events-none absolute top-4 right-4 rounded-2xl px-5 py-4 text-right backdrop-blur-xl md:top-6 md:right-6">
+                <p className="font-display text-ivory text-[clamp(1.6rem,2.6vw,2.4rem)] leading-none">
+                  {dict.location.district}
+                </p>
+                <p className="text-ivory/65 mt-2 text-[10px] tracking-[0.2em] tabular-nums">
+                  50°05′02″ N · 14°25′26″ E
+                </p>
+              </div>
+              <a
+                href={site.mapLink}
+                target="_blank"
+                rel="noreferrer"
+                className={cn(
+                  ctaDark,
+                  "absolute bottom-5 left-5 z-10 shadow-[0_6px_20px_rgba(23,18,15,0.3)] md:bottom-6 md:left-6",
+                )}
+              >
+                {b.directionsCta}
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </Section>

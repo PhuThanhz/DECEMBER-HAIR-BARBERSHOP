@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, Playfair_Display } from "next/font/google";
+import { Cinzel, Plus_Jakarta_Sans, Spectral } from "next/font/google";
 import { notFound } from "next/navigation";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
-import { SectionRail } from "@/components/layout/section-rail";
+import { MobileBookBar } from "@/components/layout/mobile-book-bar";
 import { hasLocale, locales } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { DictionaryProvider } from "@/i18n/dictionary-provider";
@@ -12,19 +12,28 @@ import { buildMetadata } from "@/lib/seo";
 import "../globals.css";
 
 // latin-ext: đủ dấu tiếng Séc (č, ř, ž, ů…)
-// Playfair Display: serif tương phản cao, nét đậm sắc — tiêu đề mạnh & sang hơn Cormorant
-const playfair = Playfair_Display({
+// Spectral: serif biên tập nét sắc, ít uốn lượn, dễ đọc — thay Bodoni Moda (owner thấy quá mềm, khó đọc)
+const display = Spectral({
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["300", "400", "500", "600"],
   style: ["normal", "italic"],
-  variable: "--font-playfair",
+  variable: "--font-display-face",
   display: "swap",
 });
 
-const manrope = Manrope({
+// Cinzel: chữ hoa La Mã khắc đá, sắc nét — CHỈ dùng cho wordmark "DECEMBER" ở Hero
+const wordmark = Cinzel({
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600"],
-  variable: "--font-manrope",
+  weight: ["400"],
+  variable: "--font-wordmark-face",
+  display: "swap",
+});
+
+// Plus Jakarta Sans: font sans hình học hiện đại, sắc nét, thanh thoát và vững vàng
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-jakarta",
   display: "swap",
 });
 
@@ -45,7 +54,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   const dict = await getDictionary(locale);
 
   return (
-    <html lang={locale} className={`${playfair.variable} ${manrope.variable}`}>
+    <html lang={locale} className={`${display.variable} ${wordmark.variable} ${jakarta.variable}`}>
       <body className="grain">
         <DictionaryProvider dict={dict} locale={locale}>
           <Providers>
@@ -56,9 +65,9 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
               {dict.common.skip}
             </a>
             <Header />
-            <SectionRail />
             <main id="main">{children}</main>
             <Footer />
+            <MobileBookBar />
           </Providers>
         </DictionaryProvider>
       </body>

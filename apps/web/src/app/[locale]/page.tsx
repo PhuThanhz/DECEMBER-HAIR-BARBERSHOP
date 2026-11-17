@@ -1,5 +1,14 @@
 import { notFound } from "next/navigation";
-import { Contact, Experience, Gallery, Hero, Menu, Styles } from "@/components/sections";
+import {
+  Contact,
+  Experience,
+  Film,
+  Gallery,
+  Hero,
+  Lookbook,
+  Menu,
+  Styles,
+} from "@/components/sections";
 import { hasLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { localBusinessJsonLd } from "@/lib/seo";
@@ -17,9 +26,11 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
       />
       <Hero />
       <Styles />
+      <Lookbook />
+      <Experience />
+      <Film />
       <Menu />
       <Gallery />
-      <Experience />
       <Contact />
     </>
   );

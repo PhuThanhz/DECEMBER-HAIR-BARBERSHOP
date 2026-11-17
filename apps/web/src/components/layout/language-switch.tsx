@@ -20,11 +20,10 @@ export function LanguageSwitch({ className }: { className?: string }) {
             aria-current={l === locale ? "true" : undefined}
             className={cn(
               "relative tracking-[0.24em] uppercase transition-opacity duration-500",
-              l === locale ? "opacity-100" : "opacity-45 hover:opacity-100",
+              l === locale ? "text-gold opacity-100" : "opacity-45 hover:opacity-100",
             )}
           >
             {l}
-            {l === locale && <span className="bg-gold absolute -bottom-1 left-0 h-px w-full" />}
           </Link>
         </span>
       ))}

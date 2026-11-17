@@ -30,7 +30,7 @@ export default function OpengraphImage() {
           opacity: 0.7,
         }}
       >
-        Barber Shop
+        Barber
       </div>
     </div>,
     size,

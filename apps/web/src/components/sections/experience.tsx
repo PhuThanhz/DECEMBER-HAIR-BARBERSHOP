@@ -1,51 +1,40 @@
 "use client";
 
 import Image from "next/image";
-import { useRef } from "react";
-import { Eyebrow } from "@december/ui";
-import { Marquee, Parallax, Reveal, SplitReveal } from "@/components/motion";
-import { testimonials } from "@/content/testimonials";
-import { stats } from "@/content/experience";
-import { spaceImages } from "@/content/images";
+import { useRef, useState, type CSSProperties } from "react";
+import { SplitReveal } from "@/components/motion";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { useDictionary } from "@/i18n/dictionary-provider";
 import { Section } from "@/components/layout/section";
+import { cn } from "@/lib/cn";
+
+/**
+ * Chương 03 — Nghi thức: tiêu đề lớn, 4 dải ảnh bo góc mềm với chú thích trên tấm kính.
+ * Desktop: dải đang chọn (hover/bấm/focus) giãn rộng thấy trọn ảnh + mô tả; dải khác thu hẹp & tối đi.
+ */
+const ritualImages = [
+  "/images/space/space-03-chair.jpg",
+  "/images/hair/craft-razor-shave.jpg",
+  "/images/space/space-04-wash-corner.jpg",
+  "/images/space/space-06-lounge.jpg",
+];
 
 export function Experience() {
   const ref = useRef<HTMLElement>(null);
   const { dict } = useDictionary();
+  const [active, setActive] = useState(0);
 
   useGSAP(
     () => {
       gsap.matchMedia().add("(prefers-reduced-motion: no-preference)", () => {
-        // Đếm số khi vào viewport
-        gsap.utils.toArray<HTMLElement>(".stat-num").forEach((el) => {
-          const end = Number(el.dataset.value);
-          const obj = { v: 0 };
-          gsap.to(obj, {
-            v: end,
-            duration: 2.2,
-            ease: "power3.out",
-            scrollTrigger: { trigger: el, start: "top 90%", once: true },
-            onUpdate: () => (el.textContent = String(Math.round(obj.v))),
-          });
+        gsap.from(".exp-card", {
+          yPercent: 8,
+          opacity: 0,
+          duration: 1.1,
+          stagger: 0.08,
+          ease: "expo.out",
+          scrollTrigger: { trigger: ".exp-grid", start: "top 85%", once: true },
         });
-
-        // Khung ảnh lớn mở rộng dần khi cuộn
-        gsap.fromTo(
-          ".exp-frame",
-          { clipPath: "inset(12% 18% 12% 18% round 400px 400px 0 0)" },
-          {
-            clipPath: "inset(0% 0% 0% 0% round 0px 0px 0 0)",
-            ease: "none",
-            scrollTrigger: {
-              trigger: ".exp-frame",
-              start: "top 85%",
-              end: "center 50%",
-              scrub: true,
-            },
-          },
-        );
       });
     },
     { scope: ref },
@@ -56,86 +45,95 @@ export function Experience() {
       ref={ref}
       id="experience"
       theme="light"
-      className="bg-travertine text-ink pt-32 md:pt-44"
+      className="bg-travertine text-ink pt-24 pb-28 lg:pt-28 lg:pb-32"
     >
-      <div className="mx-auto max-w-[1440px] px-6 md:px-10 lg:px-16">
-        <Eyebrow className="text-leather">{dict.experience.eyebrow}</Eyebrow>
-        <SplitReveal
-          as="h2"
-          className="font-display mt-8 max-w-4xl text-[clamp(3rem,6vw,6rem)] leading-[0.95] font-normal"
-        >
-          {dict.experience.title}
-        </SplitReveal>
-
-        <Reveal
-          stagger={0.1}
-          className="bg-ink/15 mt-20 grid gap-px overflow-hidden sm:grid-cols-2 lg:grid-cols-4"
-        >
-          {dict.experience.items.map((e, i) => (
-            <article
-              key={e.title}
-              className="group bg-travertine hover:bg-bone p-8 transition-colors duration-700 md:p-10"
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col px-6 md:px-10 lg:min-h-0 lg:flex-1 lg:px-16">
+        <div className="flex shrink-0 flex-col justify-between gap-8 lg:flex-row lg:items-end">
+          <div>
+            <SplitReveal
+              as="h2"
+              className="font-display max-w-4xl text-[clamp(2.4rem,4.8vw,5rem)] leading-[0.95] font-normal"
             >
-              <span className="font-display text-leather text-sm italic">0{i + 1}</span>
-              <h3 className="font-display mt-14 text-3xl font-normal">{e.title}</h3>
-              <p className="text-ink/60 mt-4 text-sm leading-relaxed">{e.text}</p>
-              <span className="bg-leather mt-8 block h-px w-8 transition-all duration-700 ease-[var(--ease-luxe)] group-hover:w-full" />
-            </article>
-          ))}
-        </Reveal>
-
-        <p className="text-leather mt-24 flex items-center gap-4 text-[11px] font-medium tracking-[0.32em] uppercase">
-          <span className="bg-leather/50 h-px w-10" />
-          {dict.testimonials.eyebrow}
-        </p>
-      </div>
-
-      {/* Đánh giá khách hàng — dải chạy ngang, dừng khi hover */}
-      <Marquee className="mt-10" duration={70}>
-        {testimonials.map((t, i) => (
-          <figure
-            key={t.id}
-            className="bg-ivory/70 mx-3 flex w-[80vw] max-w-[480px] shrink-0 flex-col justify-between rounded-[1.5rem] p-8 md:mx-4 md:p-10"
-          >
-            <p className="text-leather" aria-label={`${t.rating}/5`}>
-              {"★".repeat(t.rating)}
-            </p>
-            <blockquote className="font-display mt-5 text-xl leading-snug md:text-2xl">
-              “{dict.testimonials.items[i]?.quote}”
-            </blockquote>
-            <figcaption className="text-ink/50 mt-7 text-[11px] tracking-[0.26em] uppercase">
-              {t.author} <span className="text-leather">· {dict.testimonials.items[i]?.role}</span>
-            </figcaption>
-          </figure>
-        ))}
-      </Marquee>
-
-      <div className="exp-frame relative mt-28 h-[70vh] md:h-[90vh]">
-        <Parallax className="absolute inset-0" speed={18}>
-          <Image
-            src={spaceImages.overview.src}
-            alt={dict.images.overview}
-            fill
-            sizes="100vw"
-            className="object-cover"
-          />
-        </Parallax>
-        <div className="from-ink/70 absolute inset-0 bg-gradient-to-t via-transparent to-transparent" />
-        <div className="text-ivory absolute inset-x-0 bottom-0 mx-auto grid max-w-[1440px] grid-cols-2 gap-8 px-6 pb-12 md:grid-cols-4 md:px-10 lg:px-16">
-          {stats.map((s, i) => (
-            <div key={i}>
-              <p className="font-display text-5xl font-normal md:text-7xl">
-                <span className="stat-num" data-value={s.value}>
-                  {s.value}
-                </span>
-                <span className="text-gold">{s.suffix}</span>
-              </p>
-              <p className="text-ivory/70 mt-2 text-[11px] tracking-[0.28em] uppercase">
-                {dict.experience.stats[i]}
-              </p>
-            </div>
-          ))}
+              {dict.experience.title}
+            </SplitReveal>
+          </div>
         </div>
+
+        {/* Desktop: 4 dải ảnh — dải đang chọn giãn rộng (thấy trọn ảnh + mô tả), các dải khác thu hẹp */}
+        <ol className="exp-grid -mx-6 mt-8 flex snap-x snap-mandatory scroll-px-6 [scrollbar-width:none] gap-3 overflow-x-auto px-6 pb-2 md:-mx-10 md:mt-10 md:scroll-px-10 md:px-10 lg:mx-0 lg:min-h-0 lg:flex-1 lg:snap-none lg:overflow-visible lg:px-0 lg:pb-0 [&::-webkit-scrollbar]:hidden">
+          {dict.experience.items.map((e, i) => {
+            const on = i === active;
+            return (
+              <li
+                key={e.title}
+                onPointerEnter={() => setActive(i)}
+                className="exp-card bg-espresso relative h-[60svh] max-h-[580px] w-[82vw] shrink-0 snap-start overflow-hidden rounded-[28px] sm:w-[55vw] lg:h-auto lg:max-h-none lg:w-auto lg:min-w-0 lg:shrink lg:[flex-grow:var(--grow)] lg:basis-0 lg:transition-[flex-grow] lg:duration-[900ms] lg:ease-[var(--ease-luxe)]"
+                style={{ "--grow": on ? 3.4 : 1 } as CSSProperties}
+              >
+                <button
+                  type="button"
+                  onClick={() => setActive(i)}
+                  onFocus={() => setActive(i)}
+                  aria-expanded={on}
+                  aria-controls={`exp-desc-${i}`}
+                  className="absolute inset-0 z-10 hidden text-left lg:block lg:cursor-pointer"
+                >
+                  <span className="sr-only">{e.title}</span>
+                </button>
+                <Image
+                  src={ritualImages[i]!}
+                  alt=""
+                  fill
+                  sizes="(min-width: 1024px) 55vw, (min-width: 640px) 50vw, 100vw"
+                  className={cn(
+                    "object-cover transition-transform duration-[1.4s] ease-[var(--ease-luxe)]",
+                    on ? "lg:scale-100" : "lg:scale-110",
+                  )}
+                />
+                <div
+                  aria-hidden
+                  className={cn(
+                    "pointer-events-none absolute inset-0 bg-gradient-to-t transition-opacity duration-700",
+                    "from-ink/85 via-ink/25 to-transparent",
+                  )}
+                />
+                <div
+                  aria-hidden
+                  className={cn(
+                    "bg-ink/30 pointer-events-none absolute inset-0 hidden transition-opacity duration-700 lg:block",
+                    on ? "opacity-0" : "opacity-100",
+                  )}
+                />
+                <span className="font-display text-ivory/90 absolute top-5 left-6 text-lg italic tabular-nums">
+                  0{i + 1}
+                </span>
+                <div className="text-ivory pointer-events-none absolute inset-x-0 bottom-0 p-6 md:p-7">
+                  <div>
+                    <h3
+                      className={cn(
+                        "font-display leading-tight font-normal transition-[font-size] duration-700",
+                        on
+                          ? "text-[clamp(1.6rem,2.6vw,2.8rem)]"
+                          : "text-[clamp(1.5rem,2vw,2rem)] lg:text-[clamp(1.1rem,1.4vw,1.4rem)]",
+                      )}
+                    >
+                      {e.title}
+                    </h3>
+                    <p
+                      id={`exp-desc-${i}`}
+                      className={cn(
+                        "text-ivory/80 mt-2 max-w-md text-sm leading-relaxed transition-opacity duration-700",
+                        on ? "lg:opacity-100 lg:delay-300" : "lg:hidden",
+                      )}
+                    >
+                      {e.text}
+                    </p>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
       </div>
     </Section>
   );

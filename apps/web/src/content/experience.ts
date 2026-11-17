@@ -3,5 +3,5 @@ export const stats = [
   { value: 12, suffix: "" },
   { value: 4, suffix: "" },
   { value: 100, suffix: "%" },
-  { value: 5, suffix: "★" },
+  { value: 5, suffix: ".0" },
 ] as const;
