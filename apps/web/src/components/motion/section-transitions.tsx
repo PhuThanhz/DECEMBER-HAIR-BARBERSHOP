@@ -61,6 +61,30 @@ export function SectionTransitions() {
             },
           );
         });
+
+        // Vào section mới: nội dung hiện dần & trồi nhẹ lên theo cuộn (scrub, cuộn ngược thì đảo lại).
+        // Nhẹ nhàng — không ghim, không làm tối hẳn (bắt đầu từ 50% chứ không từ 0).
+        sections.forEach((section) => {
+          if (section.dataset.transition !== "rise") return;
+          const stage = section.querySelector<HTMLElement>(":scope > .section-stage");
+          if (!stage) return;
+          gsap.fromTo(
+            stage,
+            { opacity: 0.5, y: 56 },
+            {
+              opacity: 1,
+              y: 0,
+              ease: "none",
+              scrollTrigger: {
+                trigger: section,
+                start: "top bottom",
+                end: "top 40%",
+                scrub: 0.6,
+                invalidateOnRefresh: true,
+              },
+            },
+          );
+        });
       });
 
       ScrollTrigger.refresh();
