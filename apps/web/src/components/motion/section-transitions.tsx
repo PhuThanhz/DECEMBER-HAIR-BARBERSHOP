@@ -5,6 +5,9 @@ import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 import { setActiveSection } from "@/lib/active-section";
 import { useIntro } from "./intro-context";
 
+/** Độ trôi tối đa (px) của section trước khi section sau phủ lên. */
+const PARALLAX_PX = 80;
+
 /**
  * Điều phối chuyển cảnh giữa các section (gắn 1 lần cho cả trang):
  * Theo dõi section ở vùng giữa viewport (42%) → cập nhật header & rail chính xác kể cả khi scrollToId.
@@ -46,10 +49,17 @@ export function SectionTransitions() {
           if (!stage) return;
           gsap.fromTo(
             stage,
-            { yPercent: 0 },
+            { y: 0 },
             {
-              // Chỉ trôi chậm nhẹ — không làm mờ/tối (owner thấy section bị "tối thui" như lỗi)
-              yPercent: 10,
+              // Chỉ trôi chậm nhẹ — không làm mờ/tối (owner thấy section bị "tối thui" như lỗi).
+              // Số px cố định, KHÔNG theo % chiều cao: section cao (Menu ~1500px) từng trôi ~150px →
+              // đáy bảng giá & card xem trước bị cắt mất. tối đa 80px và không vượt phần đệm đáy nên không che nội dung.
+              // Không trôi quá phần đệm đáy của chính section (Gallery chỉ đệm 40px trên desktop);
+              // section tràn viền (Film, đệm 0) giữ nguyên 80px vì không có chữ sát đáy.
+              y: () => {
+                const pad = parseFloat(getComputedStyle(prev).paddingBottom) || 0;
+                return pad > 0 ? Math.min(PARALLAX_PX, pad) : PARALLAX_PX;
+              },
               ease: "none",
               scrollTrigger: {
                 trigger: next,

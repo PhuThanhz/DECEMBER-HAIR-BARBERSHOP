@@ -297,6 +297,8 @@ export const en = {
     pragueTime: "Prague time",
     district: "Prague 1",
     mapTitle: "Map — December Barber",
+    mapView: "Map view",
+    mapModes: { "3d": "3D", satellite: "Satellite" },
   },
   footer: {
     explore: "Explore",

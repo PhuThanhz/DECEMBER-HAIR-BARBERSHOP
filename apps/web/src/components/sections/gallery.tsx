@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import {
   useEffect,
   useRef,
@@ -48,9 +48,46 @@ const allImages: SpaceImage[] = [
 const materialColors = ["#B98A6E", "#D9CBB8", "#D9C27A"];
 
 const ease = [0.22, 1, 0.36, 1] as const;
+/** Nhịp "lướt": bật nhanh rồi hãm êm. */
+const flickEase = [0.16, 1, 0.3, 1] as const;
+const FLICK_S = 1.05;
 const pad = (n: number) => String(n).padStart(2, "0");
+
+/**
+ * Chuyển ảnh kiểu "lướt" (flick) theo hướng: ảnh mới quét vào bằng clip-path từ phía trước,
+ * bên trong trượt nhẹ (parallax) — ảnh cũ lùi về phía sau và tối đi. Không phóng to ảnh (giữ nét).
+ * `dir` = 1 (tới) | -1 (lui).
+ */
+const flickFrame: Variants = {
+  enter: (dir: number) => ({
+    clipPath: dir > 0 ? "inset(0% 0% 0% 100%)" : "inset(0% 100% 0% 0%)",
+    zIndex: 2,
+  }),
+  center: {
+    clipPath: "inset(0% 0% 0% 0%)",
+    zIndex: 2,
+    transition: { duration: FLICK_S, ease: flickEase },
+  },
+  exit: { zIndex: 1, transition: { duration: FLICK_S } },
+};
+const flickImage: Variants = {
+  enter: (dir: number) => ({ x: `${dir * 9}%`, filter: "brightness(1)" }),
+  center: { x: "0%", filter: "brightness(1)", transition: { duration: FLICK_S, ease: flickEase } },
+  exit: (dir: number) => ({
+    x: `${dir * -6}%`,
+    filter: "brightness(0.55)",
+    transition: { duration: FLICK_S, ease: flickEase },
+  }),
+};
+const fadeFrame: Variants = {
+  enter: { opacity: 0 },
+  center: { opacity: 1, transition: { duration: 0.4 } },
+  exit: { opacity: 0, transition: { duration: 0.4 } },
+};
 /** Ngưỡng vuốt (px) trên sân khấu ảnh và lightbox. */
 const SWIPE_THRESHOLD = 50;
+/** Thời gian mỗi ảnh được hiển thị khi tự chạy (giây). */
+const AUTOPLAY_S = 5;
 
 type FilterKey = "all" | "floor" | "green" | "lounge";
 const filterOptions: FilterKey[] = ["all", "lounge", "floor", "green"];
@@ -60,13 +97,23 @@ const noopSubscribe = () => () => {};
 /**
  * Không gian — "sân khấu" kiểu Apple:
  * một ảnh lớn bo góc mềm chuyển cảnh mờ-phóng chậm, chú thích & nút điều hướng trên tấm kính nổi,
- * dock ảnh nhỏ bên dưới để chọn nhanh. Vuốt / phím mũi tên / nút. Không tự chạy.
+ * dock ảnh nhỏ bên dưới để chọn nhanh. Vuốt / phím mũi tên / nút.
+ * Tự chạy mỗi AUTOPLAY_S giây, kể cả khi rê chuột lên (owner muốn ảnh luôn chạy); chỉ dừng khi
+ * ảnh lớn đang được focus bằng bàn phím, khi ngoài màn hình,
+ * khi mở lightbox hoặc khi người dùng bật giảm chuyển động. Đổi ảnh thủ công → đếm lại từ đầu.
  * Bấm ảnh lớn → xem toàn màn hình (lightbox).
  */
 export function Gallery() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [index, setIndex] = useState(0);
+  /** Hướng của lần chuyển gần nhất — quyết định ảnh lướt vào từ phải (1) hay trái (-1). */
+  const [dir, setDir] = useState<1 | -1>(1);
+  const reduceMotion = useReducedMotion();
   const [open, setOpen] = useState(false);
+  /** Ảnh lớn đang được focus bằng bàn phím (Tab) → tạm dừng để người dùng bàn phím xem kỹ. */
+  const [stageFocused, setStageFocused] = useState(false);
+  const [inView, setInView] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
   // true sau khi hydrate (document.body sẵn sàng cho portal)
   const mounted = useSyncExternalStore(
     noopSubscribe,
@@ -89,6 +136,8 @@ export function Gallery() {
   /** Chọn ảnh i và đưa ảnh nhỏ tương ứng vào giữa dock (chỉ cuộn ngang, không kéo trang). */
   const goTo = (i: number) => {
     const next = (i + count) % count;
+    if (next === index) return;
+    setDir(i > index ? 1 : -1);
     setIndex(next);
     const dock = dockRef.current;
     const thumb = dock?.children[next] as HTMLElement | undefined;
@@ -104,6 +153,7 @@ export function Gallery() {
 
   const changeFilter = (k: FilterKey) => {
     setFilter(k);
+    setDir(1);
     setIndex(0);
     dockRef.current?.scrollTo({ left: 0 });
   };
@@ -133,6 +183,28 @@ export function Gallery() {
     }
   };
 
+  // Chỉ tự chạy khi section đang trong màn hình
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setInView(!!e?.isIntersecting), {
+      threshold: 0.4,
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  // Tự chuyển ảnh (index đổi → hẹn giờ lại, nên bấm tay cũng được trọn AUTOPLAY_S giây)
+  const paused = open || stageFocused || !inView;
+  useEffect(() => {
+    if (paused || count < 2) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t = window.setTimeout(() => goTo(index + 1), AUTOPLAY_S * 1000);
+    return () => window.clearTimeout(t);
+    // goTo đọc index/count hiện tại — chỉ cần hẹn lại khi chúng hoặc trạng thái dừng đổi
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index, count, paused]);
+
   // Lightbox: focus nút Đóng khi mở, trả focus về sân khấu khi đóng
   useEffect(() => {
     if (!open) return;
@@ -147,9 +219,13 @@ export function Gallery() {
     lockScroll(true);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
-      else if (e.key === "ArrowRight") setIndex((i) => (i + 1) % count);
-      else if (e.key === "ArrowLeft") setIndex((i) => (i - 1 + count) % count);
-      else if (e.key === "Tab") {
+      else if (e.key === "ArrowRight") {
+        setDir(1);
+        setIndex((i) => (i + 1) % count);
+      } else if (e.key === "ArrowLeft") {
+        setDir(-1);
+        setIndex((i) => (i - 1 + count) % count);
+      } else if (e.key === "Tab") {
         const dialog = dialogRef.current;
         if (!dialog) return;
         const focusables = Array.from(dialog.querySelectorAll<HTMLElement>("button"));
@@ -177,6 +253,7 @@ export function Gallery() {
 
   return (
     <Section
+      ref={sectionRef}
       id="space"
       theme="dark"
       className="bg-ink text-ivory overflow-hidden pt-24 pb-16 lg:pt-28 lg:pb-10"
@@ -207,22 +284,29 @@ export function Gallery() {
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
         >
-          <AnimatePresence initial={false}>
+          <AnimatePresence initial={false} custom={dir}>
             <motion.div
               key={current.src}
-              className="absolute inset-0"
-              initial={{ opacity: 0, scale: 1.06 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.1, ease }}
+              custom={dir}
+              variants={reduceMotion ? fadeFrame : flickFrame}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              className="absolute inset-0 overflow-hidden"
             >
-              <Image
-                src={current.src}
-                alt={dict.images[current.key]}
-                fill
-                sizes="(min-width: 1600px) 1500px, 100vw"
-                className="object-cover"
-              />
+              <motion.div
+                custom={dir}
+                variants={reduceMotion ? undefined : flickImage}
+                className="absolute inset-0"
+              >
+                <Image
+                  src={current.src}
+                  alt={dict.images[current.key]}
+                  fill
+                  sizes="(min-width: 1600px) 1500px, 100vw"
+                  className="object-cover"
+                />
+              </motion.div>
             </motion.div>
           </AnimatePresence>
 
@@ -232,6 +316,8 @@ export function Gallery() {
             type="button"
             onClick={() => setOpen(true)}
             onKeyDown={onStageKey}
+            onFocus={(e) => setStageFocused(e.currentTarget.matches(":focus-visible"))}
+            onBlur={() => setStageFocused(false)}
             aria-label={`${dict.common.view}: ${dict.images[current.key]}`}
             className="focus-visible:outline-gold absolute inset-0 z-10 rounded-[28px] focus-visible:outline-2 focus-visible:-outline-offset-4"
           />
@@ -247,9 +333,14 @@ export function Gallery() {
               <motion.div
                 key={current.src}
                 className={cn(glassDark, "max-w-md rounded-2xl px-4 py-3 sm:px-5 sm:py-4")}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0, transition: { duration: 0.6, ease, delay: 0.2 } }}
-                exit={{ opacity: 0, y: -6, transition: { duration: 0.2 } }}
+                // Chú thích lướt cùng hướng với ảnh
+                initial={{ opacity: 0, x: reduceMotion ? 0 : dir * 28 }}
+                animate={{ opacity: 1, x: 0, transition: { duration: 0.7, ease, delay: 0.25 } }}
+                exit={{
+                  opacity: 0,
+                  x: reduceMotion ? 0 : dir * -18,
+                  transition: { duration: 0.22 },
+                }}
                 aria-live="polite"
               >
                 <p className="text-gold flex items-center gap-3 text-[11px] font-medium tracking-[0.18em] uppercase">
@@ -395,6 +486,7 @@ export function Gallery() {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
+                          setDir(d === "next" ? 1 : -1);
                           setIndex((i) => (i + (d === "next" ? 1 : -1) + count) % count);
                         }}
                         className={cn(ctaGlass, "px-4 py-3 text-[13px]")}

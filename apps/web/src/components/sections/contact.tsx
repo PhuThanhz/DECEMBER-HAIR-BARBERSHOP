@@ -3,16 +3,16 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { LogoD } from "@/components/brand/logo-d";
-import { BrandMap } from "@/components/ui/brand-map";
+import { BrandMap, type MapMode } from "@/components/ui/brand-map";
 import { Section } from "@/components/layout/section";
 import { Reveal, SplitReveal } from "@/components/motion";
 import { WhatsAppIcon } from "@/components/brand/whatsapp-icon";
 import { ctaDark, ctaGlass, ctaGold } from "@/components/ui/cta";
+import { Segmented } from "@/components/ui/segmented";
 import { isOpened, site, telHref } from "@/content/site";
 import { useDictionary } from "@/i18n/dictionary-provider";
 import { useBookingSelection } from "@/lib/booking-selection";
 import { cn } from "@/lib/cn";
-import { scrollToId } from "@/lib/scroll";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 /** Toạ độ tiệm [kinh độ, vĩ độ] — Václavské náměstí 1. */
@@ -48,15 +48,15 @@ function getPragueStatus(): PragueStatus {
 
 /**
  * Chương cuối — Đặt chỗ & ghé thăm (gộp Opening + Booking + Contact cũ).
- * Trái (#booking): lựa chọn đang chọn, 2 kênh đặt lịch, cam kết, dải ưu đãi khai trương.
- * Phải: địa chỉ, giờ mở cửa, liên hệ và bản đồ MapLibre (ghim logo D, một nút chỉ đường).
+ * Trái (#booking): lựa chọn đang chọn, 2 kênh đặt lịch.
+ * Phải: địa chỉ, giờ mở cửa, liên hệ và bản đồ MapLibre (ghim logo D, chế độ 3D / vệ tinh, một nút chỉ đường).
  */
 export function Contact() {
   const { dict } = useDictionary();
   const { selection, selectBooking } = useBookingSelection();
   const [status, setStatus] = useState<PragueStatus | null>(null);
   const b = dict.booking;
-  const o = dict.opening;
+  const [mapMode, setMapMode] = useState<MapMode>("3d");
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -78,16 +78,6 @@ export function Contact() {
     },
     { title: b.call, sub: b.callSub, cta: b.callCta, href: telHref, external: false },
   ];
-
-  const claim = () => {
-    selectBooking({
-      kind: "service",
-      id: "december-ritual",
-      title: o.selectionPrefix,
-      meta: o.selectionMeta,
-    });
-    scrollToId("booking");
-  };
 
   const statusText = !status
     ? null
@@ -195,33 +185,6 @@ export function Contact() {
                 );
               })}
             </Reveal>
-
-            <ul className="text-ivory/60 mt-6 flex flex-wrap gap-x-8 gap-y-2 text-xs tracking-wider">
-              {b.guarantee.map((g) => (
-                <li key={g}>{g}</li>
-              ))}
-            </ul>
-
-            {/* Ưu đãi khai trương — gọn: tiêu đề, 3 đặc quyền một dòng, một lời mời */}
-            <div className="mt-12">
-              <p className="font-display text-gold text-[clamp(1.5rem,2.2vw,2rem)] leading-tight italic">
-                {o.title}
-              </p>
-              <Reveal stagger={0.08} as="ol" className="mt-5 flex flex-col gap-2.5">
-                {o.privileges.map((p) => (
-                  <li
-                    key={p.num}
-                    className="font-display text-ivory/85 flex items-baseline gap-3 text-lg"
-                  >
-                    <span className="text-gold/70 w-5 text-xs italic tabular-nums">{p.num}</span>
-                    {p.title}
-                  </li>
-                ))}
-              </Reveal>
-              <button type="button" onClick={claim} className={cn(ctaGold, "mt-7")}>
-                {o.cta}
-              </button>
-            </div>
           </div>
 
           {/* Phải — ghé thăm */}
@@ -298,55 +261,68 @@ export function Contact() {
                 </dl>
               </div>
             </div>
+          </div>
+        </div>
 
-            {/* Bản đồ — MapLibre + OpenFreeMap (màu tự nhiên), ghim logo D, nhãn trên nền tối để luôn đọc rõ */}
-            <div className="bg-espresso relative mt-3 h-[420px] w-full overflow-hidden rounded-3xl sm:h-[480px] lg:h-auto lg:min-h-[480px] lg:flex-1">
-              <BrandMap
-                center={MAP_CENTER}
-                zoom={16.2}
-                label={dict.location.mapTitle}
-                pin={
-                  <div className="pointer-events-none flex flex-col items-center">
-                    <div className="bg-ink rounded-xl p-2 shadow-[0_6px_20px_rgba(23,18,15,0.35)]">
-                      <LogoD tone="gold" className="h-7 w-auto" strandWidth={3} />
-                    </div>
-                    <div className="bg-ink h-4 w-0.5" />
-                    <div className="bg-ink size-2 rounded-full" />
-                  </div>
-                }
-                fallback={
-                  <a
-                    href={site.mapLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-ivory/80 hover:text-gold flex size-full items-center justify-center text-sm transition-colors"
-                  >
-                    {dict.common.openMaps}
-                  </a>
-                }
-              />
-              {/* Nhãn địa danh trên tấm kính tối (nổi trên bản đồ) */}
-              <div className="bg-ink/75 pointer-events-none absolute top-4 right-4 rounded-2xl px-5 py-4 text-right backdrop-blur-xl md:top-6 md:right-6">
-                <p className="font-display text-ivory text-[clamp(1.6rem,2.6vw,2.4rem)] leading-none">
-                  {dict.location.district}
-                </p>
-                <p className="text-ivory/65 mt-2 text-[10px] tracking-[0.2em] tabular-nums">
-                  50°05′02″ N · 14°25′26″ E
-                </p>
+        {/* Bản đồ toàn chiều ngang (hàng riêng, không để trống cột trái) — MapLibre + OpenFreeMap (màu tự nhiên), ghim logo D, nhãn trên nền tối để luôn đọc rõ */}
+        <div className="bg-espresso relative mt-12 h-[460px] w-full overflow-hidden rounded-3xl sm:h-[540px] lg:mt-16 lg:h-[clamp(560px,72vh,760px)]">
+          <BrandMap
+            center={MAP_CENTER}
+            zoom={16.2}
+            mode={mapMode}
+            label={dict.location.mapTitle}
+            pin={
+              <div className="pointer-events-none flex flex-col items-center">
+                <div className="bg-ink rounded-xl p-2 shadow-[0_6px_20px_rgba(23,18,15,0.35)]">
+                  <LogoD tone="gold" className="h-7 w-auto" strandWidth={3} />
+                </div>
+                <div className="bg-ink h-4 w-0.5" />
+                <div className="bg-ink size-2 rounded-full" />
               </div>
+            }
+            fallback={
               <a
                 href={site.mapLink}
                 target="_blank"
                 rel="noreferrer"
-                className={cn(
-                  ctaDark,
-                  "absolute bottom-5 left-5 z-10 shadow-[0_6px_20px_rgba(23,18,15,0.3)] md:bottom-6 md:left-6",
-                )}
+                className="text-ivory/80 hover:text-gold flex size-full items-center justify-center text-sm transition-colors"
               >
-                {b.directionsCta}
+                {dict.common.openMaps}
               </a>
-            </div>
+            }
+          />
+          {/* Chế độ xem: 3D (nhà nổi khối, nghiêng) · vệ tinh — kính nổi trên bản đồ */}
+          <Segmented
+            label={dict.location.mapView}
+            layoutId="map-mode"
+            value={mapMode}
+            onChange={setMapMode}
+            options={[
+              { key: "3d", label: dict.location.mapModes["3d"] },
+              { key: "satellite", label: dict.location.mapModes.satellite },
+            ]}
+            className="bg-ink/70 absolute top-4 left-4 z-10 md:top-6 md:left-6"
+          />
+          {/* Nhãn địa danh trên tấm kính tối (nổi trên bản đồ) */}
+          <div className="bg-ink/75 pointer-events-none absolute top-4 right-4 rounded-2xl px-5 py-4 text-right backdrop-blur-xl md:top-6 md:right-6">
+            <p className="font-display text-ivory text-[clamp(1.6rem,2.6vw,2.4rem)] leading-none">
+              {dict.location.district}
+            </p>
+            <p className="text-ivory/65 mt-2 hidden text-[10px] tracking-[0.2em] tabular-nums sm:block">
+              50°05′02″ N · 14°25′26″ E
+            </p>
           </div>
+          <a
+            href={site.mapLink}
+            target="_blank"
+            rel="noreferrer"
+            className={cn(
+              ctaDark,
+              "absolute bottom-5 left-5 z-10 shadow-[0_6px_20px_rgba(23,18,15,0.3)] md:bottom-6 md:left-6",
+            )}
+          >
+            {b.directionsCta}
+          </a>
         </div>
       </div>
     </Section>

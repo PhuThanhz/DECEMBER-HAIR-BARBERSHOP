@@ -293,6 +293,8 @@ export const cs: Dictionary = {
     pragueTime: "Čas v Praze",
     district: "Praha 1",
     mapTitle: "Mapa — December Barber",
+    mapView: "Zobrazení mapy",
+    mapModes: { "3d": "3D", satellite: "Satelit" },
   },
   footer: {
     explore: "Prozkoumat",
