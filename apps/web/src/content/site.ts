@@ -4,9 +4,23 @@ import type { SiteConfig } from "@december/types";
  * Thông tin tiệm (không phụ thuộc ngôn ngữ). ⚠️ Giá trị TODO là placeholder — thay bằng thông tin thật.
  * Văn bản hiển thị nằm trong src/i18n/dictionaries/{cs,en}.ts
  */
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL}`
+    : undefined) ||
+  (process.env.NEXT_PUBLIC_VERCEL_URL
+    ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+    : undefined) ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : undefined) ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined) ||
+  "https://decemberbarber.cz";
+
 export const site: SiteConfig = {
   name: "December Barber",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://decemberbarber.cz", // TODO
+  url: siteUrl,
   phone: "+420 777 000 000", // TODO
   whatsapp: "https://wa.me/420777000000", // TODO
   /**
