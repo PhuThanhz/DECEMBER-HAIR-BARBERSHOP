@@ -43,7 +43,7 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
-/** Icon + màu nhận diện chính thức của từng kênh (ô vuông, không bo tròn, không glow). */
+/** Icon + màu nhận diện chính thức của từng kênh (ô bo góc, không viền, không glow). */
 const socialIcons: Record<string, { Icon: typeof InstagramIcon; tile: string }> = {
   Instagram: {
     Icon: InstagramIcon,
@@ -53,12 +53,14 @@ const socialIcons: Record<string, { Icon: typeof InstagramIcon; tile: string }> 
   WhatsApp: { Icon: WhatsAppIcon, tile: "bg-[#25D366] text-white" },
 };
 
-const heading = "text-ivory/45 text-sm";
+const heading = "text-ivory/45 text-[13px] md:text-sm";
 const link = "text-ivory/90 hover:text-gold transition-colors duration-300";
 
 /**
  * Footer: ảnh không gian tiệm phủ mờ làm nền, chữ "December Barber" khổ lớn trong suốt nằm trên ảnh ở đáy.
- * Phía trên: logo + mô tả · khám phá (2 cột) · ghé thăm · mạng xã hội (icon đơn sắc).
+ * Phía trên: logo + mô tả · khám phá (2 cột) · ghé thăm · mạng xã hội.
+ * Mobile (< md): căn giữa toàn bộ — menu là một hàng ngang tự xuống dòng, mạng xã hội là một hàng icon,
+ * không để trống nửa phải. Không đường kẻ, không khung viền. Từ md: lưới cột căn trái.
  */
 export function Footer() {
   const { dict } = useDictionary();
@@ -78,11 +80,11 @@ export function Footer() {
       </div>
 
       <div className="mx-auto max-w-[1600px] px-6 md:px-10 lg:px-16">
-        <div className="border-ivory/10 grid gap-12 border-t pt-20 md:pt-24 lg:grid-cols-12 lg:gap-10">
+        <div className="grid gap-10 pt-16 text-center md:grid-cols-2 md:gap-x-10 md:pt-24 md:text-left lg:grid-cols-12 lg:gap-10">
           {/* Thương hiệu */}
-          <div className="lg:col-span-4">
-            <div className="flex items-center gap-3">
-              <LogoD tone="gold" className="h-14 w-auto" strandWidth={3.5} />
+          <div className="md:col-span-2 lg:col-span-4">
+            <div className="flex items-center justify-center gap-3 md:justify-start">
+              <LogoD tone="gold" className="h-12 w-auto md:h-14" strandWidth={3.5} />
               <div>
                 <p className="font-display text-ivory text-xl tracking-wider">DECEMBER</p>
                 <p className="text-gold text-[9px] font-semibold tracking-[0.3em] uppercase">
@@ -90,12 +92,12 @@ export function Footer() {
                 </p>
               </div>
             </div>
-            <p className="text-ivory/60 mt-8 max-w-sm text-[15px] leading-relaxed">
+            <p className="text-ivory/60 mx-auto mt-6 max-w-sm text-[14px] leading-relaxed text-pretty md:mx-0 md:mt-8 md:text-[15px]">
               {dict.meta.description}
             </p>
 
             {/* Hệ thống cùng nhà: December Hair (kadeřnictví cho mọi người) — ô nhỏ màu xanh rừng của thương hiệu Hair */}
-            <p className="text-ivory/45 mt-8 text-[13px]">{dict.footer.family.kicker}</p>
+            <p className="text-ivory/45 mt-6 text-[13px] md:mt-8">{dict.footer.family.kicker}</p>
             <a
               href={site.sisterSite}
               target="_blank"
@@ -116,7 +118,7 @@ export function Footer() {
           {/* Khám phá — 2 cột */}
           <nav className="lg:col-span-3 lg:col-start-6" aria-label={dict.footer.explore}>
             <p className={heading}>{dict.footer.explore}</p>
-            <ul className="mt-6 grid grid-cols-2 gap-x-8 gap-y-4 text-[15px]">
+            <ul className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-3 text-[15px] md:mt-6 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-4">
               {navIds.map((id) => (
                 <li key={id}>
                   <a
@@ -137,7 +139,7 @@ export function Footer() {
           {/* Ghé thăm */}
           <div className="lg:col-span-2">
             <p className={heading}>{dict.footer.visit}</p>
-            <ul className="mt-6 space-y-4 text-[15px]">
+            <ul className="mt-4 space-y-3 text-[15px] md:mt-6 md:space-y-4">
               <li>
                 <a href={site.mapLink} target="_blank" rel="noreferrer" className={link}>
                   {site.address}
@@ -157,9 +159,10 @@ export function Footer() {
           </div>
 
           {/* Mạng xã hội */}
-          <div className="lg:col-span-2 lg:col-start-11">
+          <div className="md:col-span-2 lg:col-span-2 lg:col-start-11">
             <p className={heading}>{dict.footer.follow}</p>
-            <ul className="mt-6 space-y-4 text-[15px]">
+            {/* Mobile: một hàng icon; desktop: danh sách icon + tên */}
+            <ul className="mt-4 flex justify-center gap-3 text-[15px] md:mt-6 md:justify-start lg:flex-col lg:gap-4">
               {site.socials.map((s) => {
                 const { Icon, tile } = socialIcons[s.label] ?? socialIcons.Instagram!;
                 return (
@@ -168,15 +171,15 @@ export function Footer() {
                       href={s.href}
                       target="_blank"
                       rel="noreferrer"
+                      aria-label={s.label}
                       className={`${link} group inline-flex items-center gap-3`}
                     >
-                      {/* Khung kép: viền mảnh bao ngoài ô màu, chuyển vàng khi hover */}
-                      <span className="border-ivory/25 group-hover:border-gold border p-1 transition-colors duration-300">
-                        <span className={`flex size-9 items-center justify-center ${tile}`}>
-                          <Icon className="size-[18px]" />
-                        </span>
+                      <span
+                        className={`flex size-11 items-center justify-center rounded-xl transition-opacity duration-300 group-hover:opacity-85 lg:size-9 ${tile}`}
+                      >
+                        <Icon className="size-5 lg:size-[18px]" />
                       </span>
-                      {s.label}
+                      <span className="sr-only lg:not-sr-only">{s.label}</span>
                     </a>
                   </li>
                 );
@@ -189,13 +192,13 @@ export function Footer() {
       {/* Chữ thương hiệu khổ lớn, trong suốt trên nền ảnh */}
       <p
         aria-hidden
-        className="font-display text-ivory/[0.1] pointer-events-none mt-16 text-center text-[clamp(2.5rem,11.6vw,13rem)] leading-[0.9] font-normal tracking-tight whitespace-nowrap select-none md:mt-24"
+        className="font-display text-ivory/[0.1] pointer-events-none mt-12 text-center text-[clamp(2.5rem,11.6vw,13rem)] leading-[0.9] font-normal tracking-tight whitespace-nowrap select-none md:mt-24"
       >
         December Barber
       </p>
 
       {/* Bản quyền — dòng mảnh, không nền */}
-      <div className="text-ivory/45 mx-auto flex max-w-[1600px] flex-col items-start justify-between gap-3 px-6 pt-4 pb-6 text-[13px] md:flex-row md:items-center md:px-10 lg:px-16">
+      <div className="text-ivory/45 mx-auto flex max-w-[1600px] flex-col items-center gap-3 px-6 pt-4 pb-6 text-center text-[12px] md:flex-row md:justify-between md:px-10 md:text-left md:text-[13px] lg:px-16">
         <span>
           © {new Date().getFullYear()} {site.name}. {dict.footer.rights}.
         </span>

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState, type TouchEvent } from "react";
 import { Section } from "@/components/layout/section";
 import { featureStyles } from "@/content/hair";
 import { useDictionary } from "@/i18n/dictionary-provider";
@@ -28,6 +28,9 @@ export function Styles() {
   const { dict } = useDictionary();
   const { selectBooking } = useBookingSelection();
   const ref = useRef<HTMLElement>(null);
+  /** Dải chọn kiểu (cuộn ngang trên mobile) + điểm bắt đầu vuốt trên ảnh. */
+  const pickerRef = useRef<HTMLOListElement>(null);
+  const touchRef = useRef<{ x: number; y: number } | null>(null);
   const [active, setActive] = useState(0);
   const [hovering, setHovering] = useState(false);
   const [focusWithin, setFocusWithin] = useState(false);
@@ -45,6 +48,34 @@ export function Styles() {
     io.observe(el);
     return () => io.disconnect();
   }, []);
+
+  // Mobile: dải chọn kiểu nằm ngang → đưa kiểu đang chọn vào giữa (chỉ cuộn ngang, không kéo trang)
+  useEffect(() => {
+    const strip = pickerRef.current;
+    const item = strip?.children[active] as HTMLElement | undefined;
+    if (!strip || !item || strip.scrollWidth <= strip.clientWidth) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    strip.scrollTo({
+      left: item.offsetLeft - strip.clientWidth / 2 + item.clientWidth / 2,
+      behavior: reduce ? "auto" : "smooth",
+    });
+  }, [active]);
+
+  /** Vuốt ngang trên ảnh để đổi kiểu (mobile) — vuốt dọc vẫn cuộn trang. */
+  const onPhotoTouchStart = (e: TouchEvent) => {
+    const t = e.touches[0];
+    touchRef.current = t ? { x: t.clientX, y: t.clientY } : null;
+  };
+  const onPhotoTouchEnd = (e: TouchEvent) => {
+    const start = touchRef.current;
+    const t = e.changedTouches[0];
+    touchRef.current = null;
+    if (!start || !t) return;
+    const dx = t.clientX - start.x;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(t.clientY - start.y)) return;
+    const n = featureStyles.length;
+    setActive((i) => (i + (dx < 0 ? 1 : -1) + n) % n);
+  };
 
   const s = featureStyles[active] ?? featureStyles[0];
   const info = dict.styles.items[s.id];
@@ -190,7 +221,7 @@ export function Styles() {
         <div className="relative mt-8 grid grid-cols-[minmax(0,1fr)] gap-8 lg:mt-6 lg:h-[calc(100svh-14rem)] lg:max-h-[860px] lg:min-h-[560px] lg:grid-cols-12 lg:gap-10">
           {/* Trái: tên kiểu tóc khổ lớn (chữ mọc lên từng ký tự) ở trên, lời dẫn + thông số ở dưới.
               Tên KHÔNG đè lên ảnh — owner thấy chữ che mặt người mẫu rất kỳ. */}
-          <div className="relative z-20 order-2 lg:order-1 lg:col-span-3">
+          <div className="relative z-20 order-3 lg:order-1 lg:col-span-3">
             {/* Mọi kiểu xếp chồng (ẩn) trong cùng ô lưới → chiều cao = kiểu dài nhất: tự chuyển kiểu
                 không đẩy trang lên/xuống (CLS). Desktop (lg) khung đã cố định chiều cao nên bỏ. */}
             <div className="grid lg:h-full">
@@ -208,7 +239,8 @@ export function Styles() {
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div
                     key={s.id}
-                    className="flex h-full flex-col justify-between gap-8"
+                    // Mobile: dồn lên trên (khoảng thừa nằm dưới cùng, không còn hố giữa tên & lời dẫn)
+                    className="flex h-full flex-col justify-start gap-8 lg:justify-between"
                     exit={{ opacity: 0, y: -10, transition: { duration: 0.3 } }}
                   >
                     {renderCopy(active, true)}
@@ -221,7 +253,11 @@ export function Styles() {
           {/* Giữa: khung CỐ ĐỊNH 3:4 cho mọi kiểu — cả 5 ảnh đều là chân dung dọc nên cùng kích thước,
               phủ kín khung (cover), không viền mờ. */}
           <div className="relative z-10 order-1 lg:order-2 lg:col-span-6 lg:min-h-0">
-            <div className="bg-ink relative mx-auto aspect-[3/4] h-[52svh] max-w-full overflow-hidden rounded-[28px] lg:h-full">
+            <div
+              className="bg-ink relative mx-auto aspect-[3/4] h-[52svh] max-w-full overflow-hidden rounded-[28px] lg:h-full"
+              onTouchStart={onPhotoTouchStart}
+              onTouchEnd={onPhotoTouchEnd}
+            >
               <AnimatePresence initial={false}>
                 <motion.div
                   key={s.id}
@@ -277,13 +313,17 @@ export function Styles() {
             </div>
           </div>
 
-          {/* Phải: mục lục 5 kiểu + đặt lịch */}
-          <div className="relative z-20 order-3 flex flex-col justify-between gap-8 lg:col-span-3">
-            <ol className="flex [scrollbar-width:none] gap-2 overflow-x-auto lg:flex-col lg:gap-1.5 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
+          {/* Phải: mục lục 5 kiểu + đặt lịch. Mobile (`contents`): dải chọn kiểu nằm NGAY DƯỚI ảnh,
+              nút đặt lịch xuống cuối — không phải kéo xuống chọn rồi kéo lên xem ảnh. */}
+          <div className="contents lg:relative lg:z-20 lg:order-3 lg:col-span-3 lg:flex lg:flex-col lg:justify-between lg:gap-8">
+            <ol
+              ref={pickerRef}
+              className="relative z-20 order-2 -mx-6 -mt-2 flex snap-x [scrollbar-width:none] gap-2 overflow-x-auto px-6 md:-mx-10 md:px-10 lg:order-none lg:mx-0 lg:mt-0 lg:flex-col lg:gap-1.5 lg:overflow-visible lg:px-0 [&::-webkit-scrollbar]:hidden"
+            >
               {featureStyles.map((it, i) => {
                 const on = i === active;
                 return (
-                  <li key={it.id} className="shrink-0">
+                  <li key={it.id} className="shrink-0 snap-center">
                     <button
                       type="button"
                       aria-pressed={on}
@@ -332,7 +372,11 @@ export function Styles() {
               })}
             </ol>
 
-            <button type="button" onClick={book} className={cn(ctaGold, "lg:self-end")}>
+            <button
+              type="button"
+              onClick={book}
+              className={cn(ctaGold, "relative z-20 order-4 self-start lg:order-none lg:self-end")}
+            >
               {dict.styles.cta}
             </button>
           </div>

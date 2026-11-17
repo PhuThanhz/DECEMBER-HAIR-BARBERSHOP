@@ -87,7 +87,7 @@ const fadeFrame: Variants = {
 /** Ngưỡng vuốt (px) trên sân khấu ảnh và lightbox. */
 const SWIPE_THRESHOLD = 50;
 /** Thời gian mỗi ảnh được hiển thị khi tự chạy (giây). */
-const AUTOPLAY_S = 5;
+const AUTOPLAY_S = 2.5;
 
 type FilterKey = "all" | "floor" | "green" | "lounge";
 const filterOptions: FilterKey[] = ["all", "lounge", "floor", "green"];
@@ -98,9 +98,9 @@ const noopSubscribe = () => () => {};
  * Không gian — "sân khấu" kiểu Apple:
  * một ảnh lớn bo góc mềm chuyển cảnh mờ-phóng chậm, chú thích & nút điều hướng trên tấm kính nổi,
  * dock ảnh nhỏ bên dưới để chọn nhanh. Vuốt / phím mũi tên / nút.
- * Tự chạy mỗi AUTOPLAY_S giây, kể cả khi rê chuột lên (owner muốn ảnh luôn chạy); chỉ dừng khi
- * ảnh lớn đang được focus bằng bàn phím, khi ngoài màn hình,
- * khi mở lightbox hoặc khi người dùng bật giảm chuyển động. Đổi ảnh thủ công → đếm lại từ đầu.
+ * Tự chạy mỗi AUTOPLAY_S giây, kể cả khi rê chuột/focus (owner muốn ảnh luôn chạy); chỉ dừng khi
+ * ngoài màn hình, khi mở lightbox hoặc khi người dùng bật giảm chuyển động.
+ * (Từng dừng khi ảnh lớn được focus — sau khi đóng lightbox focus trả về ảnh nên bị kẹt dừng.) Đổi ảnh thủ công → đếm lại từ đầu.
  * Bấm ảnh lớn → xem toàn màn hình (lightbox).
  */
 export function Gallery() {
@@ -110,8 +110,6 @@ export function Gallery() {
   const [dir, setDir] = useState<1 | -1>(1);
   const reduceMotion = useReducedMotion();
   const [open, setOpen] = useState(false);
-  /** Ảnh lớn đang được focus bằng bàn phím (Tab) → tạm dừng để người dùng bàn phím xem kỹ. */
-  const [stageFocused, setStageFocused] = useState(false);
   const [inView, setInView] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   // true sau khi hydrate (document.body sẵn sàng cho portal)
@@ -195,7 +193,7 @@ export function Gallery() {
   }, []);
 
   // Tự chuyển ảnh (index đổi → hẹn giờ lại, nên bấm tay cũng được trọn AUTOPLAY_S giây)
-  const paused = open || stageFocused || !inView;
+  const paused = open || !inView;
   useEffect(() => {
     if (paused || count < 2) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -316,8 +314,6 @@ export function Gallery() {
             type="button"
             onClick={() => setOpen(true)}
             onKeyDown={onStageKey}
-            onFocus={(e) => setStageFocused(e.currentTarget.matches(":focus-visible"))}
-            onBlur={() => setStageFocused(false)}
             aria-label={`${dict.common.view}: ${dict.images[current.key]}`}
             className="focus-visible:outline-gold absolute inset-0 z-10 rounded-[28px] focus-visible:outline-2 focus-visible:-outline-offset-4"
           />
