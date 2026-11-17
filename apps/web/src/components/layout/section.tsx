@@ -1,4 +1,4 @@
-import { forwardRef, type ComponentPropsWithoutRef } from "react";
+import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 export interface SectionProps extends ComponentPropsWithoutRef<"section"> {
@@ -6,22 +6,39 @@ export interface SectionProps extends ComponentPropsWithoutRef<"section"> {
   /** Màu nền → header & rail đổi màu chữ tương ứng. */
   theme: "light" | "dark";
   /**
-   * "rise": section trồi lên đè lên section trước với góc bo lớn → góc bo phẳng dần khi cuộn.
-   * "none": không hiệu ứng chuyển.
+   * "rise" (mặc định): nối liền section trước bằng mép thẳng, phẳng — chồng 1px để không lộ khe.
+   * "none": section đầu trang.
    */
   transition?: "rise" | "none";
   /** Hiện trên thanh chỉ mục bên phải (desktop). */
   rail?: boolean;
   /** Nhãn hiển thị trên thanh chỉ mục (mặc định lấy dict.nav[id]). */
   label?: string;
+  /**
+   * Desktop (lg+): section cao đúng 1 màn hình (100svh, sàn 680px) và .section-stage là flex-col
+   * để phần thân dùng `flex-1 min-h-0` lấp đầy khung. Mobile: cao tự nhiên theo nội dung.
+   */
+  fit?: boolean;
+  /** Lớp nền phía sau nội dung (ảnh mờ…), phủ kín cả phần đệm của section, không bị parallax. */
+  background?: ReactNode;
 }
 
 /**
- * Khung chuẩn cho mọi section. Hiệu ứng chuyển cảnh được gắn tập trung trong
- * <SectionTransitions/> dựa trên data-attribute, nên section con không cần tự viết animation chuyển.
+ * Khung chuẩn cho mọi section. Chuyển giữa các section là mép thẳng, phẳng (owner muốn đơn giản).
  */
 export const Section = forwardRef<HTMLElement, SectionProps>(function Section(
-  { id, theme, transition = "rise", rail = true, label, className, children, ...props },
+  {
+    id,
+    theme,
+    transition = "rise",
+    rail = true,
+    label,
+    fit = true,
+    background,
+    className,
+    children,
+    ...props
+  },
   ref,
 ) {
   return (
@@ -33,18 +50,27 @@ export const Section = forwardRef<HTMLElement, SectionProps>(function Section(
       data-rail={rail ? "" : undefined}
       data-label={label}
       className={cn(
-        "relative isolate",
-        transition === "rise" && "-mt-16 rounded-t-[4rem] md:-mt-24 md:rounded-t-[7rem]",
+        "relative isolate w-full",
+        // Chồng 1px lên section trước → không lộ vạch nền tối do chiều cao lẻ pixel
+        transition === "rise" && "-mt-px",
+        fit && "lg:flex lg:h-svh lg:min-h-[680px] lg:flex-col",
         className,
       )}
       {...props}
     >
-      {children}
-      {/* Lớp tối dần khi section kế tiếp trồi lên che section này */}
+      {background && (
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          {background}
+        </div>
+      )}
       <div
-        aria-hidden
-        className="section-shade bg-ink pointer-events-none absolute inset-0 z-30 opacity-0"
-      />
+        className={cn(
+          "section-stage relative z-10 h-full w-full",
+          fit && "lg:flex lg:min-h-0 lg:flex-1 lg:flex-col",
+        )}
+      >
+        {children}
+      </div>
     </section>
   );
 });

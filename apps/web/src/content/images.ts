@@ -22,3 +22,26 @@ export const spaceImages = {
 
 export type SpaceImage = (typeof spaceImages)[keyof typeof spaceImages];
 export type ImageKey = SpaceImage["key"];
+
+/** Video nền (đã làm sạch, nén, bỏ âm thanh). Nguồn gốc trong sources/. */
+/**
+ * Film section "Pro ty, kdo si všímají detailů" — 2 bản Veo 3 riêng cho máy tính (16:9) và điện thoại (9:16).
+ * Prompt Veo 3 & thông số xuất file: apps/web/docs/film-veo-prompts.md.
+ * ready = false → hiển thị ảnh tĩnh thay thế.
+ */
+export const filmVideo = {
+  ready: true,
+  /** Phim kể chuyện (phố mưa → tiệm sáng) phát 1 lần rồi dừng ở khung cuối; đổi true nếu video lặp liền mạch. */
+  loop: false,
+  // Nguồn: sources/17112026.mp4 (Veo, 16:9, 10s) — đã nén, bỏ tiếng. Chưa có bản 9:16 riêng nên điện thoại dùng chung (cắt giữa cửa).
+  desktop: "/videos/film.mp4",
+  mobile: "/videos/film.mp4",
+  posterDesktop: "/videos/film-poster.jpg",
+  posterMobile: "/videos/film-poster.jpg",
+} as const;
+
+export const heroVideo = {
+  // Veo: dao cạo, khăn nóng, kéo vàng — 1 cảnh liền, đã nén & nối vòng lặp liền mạch (9s, không tiếng)
+  src: "/videos/hero-veo.mp4",
+  poster: "/videos/hero-veo-poster.jpg",
+} as const;

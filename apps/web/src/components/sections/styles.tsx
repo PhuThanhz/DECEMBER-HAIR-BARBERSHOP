@@ -4,396 +4,297 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { Section } from "@/components/layout/section";
-import { LogoD } from "@/components/brand/logo-d";
-import { Magnetic, SplitReveal } from "@/components/motion";
 import { featureStyles } from "@/content/hair";
 import { useDictionary } from "@/i18n/dictionary-provider";
-import { setActiveSection, useActiveSection } from "@/lib/active-section";
-import { gsap, useGSAP } from "@/lib/gsap";
-import { scrollToId } from "@/lib/scroll";
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { useBookingSelection } from "@/lib/booking-selection";
 import { cn } from "@/lib/cn";
+import { scrollToId } from "@/lib/scroll";
+import { ctaGlass, ctaGold, glassDark } from "@/components/ui/cta";
 
-const AUTOPLAY_SECONDS = 6;
+/** Thời gian mỗi kiểu tóc được hiển thị khi tự chạy (giây). */
+const AUTOPLAY_S = 7;
+const ease = [0.22, 1, 0.36, 1] as const;
 const curtain = [0.76, 0, 0.24, 1] as const;
-const luxe = [0.22, 1, 0.36, 1] as const;
+const pad = (n: number) => String(n).padStart(2, "0");
 
 /**
- * Section "Kiểu tóc" — 5 kiểu tóc signature trong MỘT section:
- * - Mỗi kiểu có bảng màu riêng; chọn kiểu → nền & chữ của cả section chuyển màu mượt.
- * - Ảnh lớn mở như rèm, ảnh chi tiết chồng góc, tên kiểu tóc chạy ngang phía sau.
- * - Tự chuyển kiểu sau 6s (thanh tiến độ trên thumbnail), dừng khi hover hoặc khi section ra khỏi màn hình.
+ * Chương 02 — 5 kiểu tóc signature dạng "bìa tạp chí" (cao đúng 1 màn hình):
+ * tên kiểu tóc khổ lớn chạy ngang phía sau, ảnh chân dung khung vòm đứng phía trước che một phần chữ.
+ * Trái: lời dẫn + thông số. Phải: mục lục 5 kiểu (ảnh nhỏ) + nút đặt lịch.
+ * Đổi kiểu: chữ mọc lên từng ký tự, ảnh mở như rèm, nền đổi màu. Tự chạy (không hiện vạch tiến độ).
  */
 export function Styles() {
-  const ref = useRef<HTMLElement>(null);
   const { dict } = useDictionary();
-  const active = useActiveSection();
-  const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const { selectBooking } = useBookingSelection();
+  const ref = useRef<HTMLElement>(null);
+  const [active, setActive] = useState(0);
+  const [hovering, setHovering] = useState(false);
+  const [focusWithin, setFocusWithin] = useState(false);
+  const [userPaused, setUserPaused] = useState(false);
   const [inView, setInView] = useState(false);
-  const reduced = useReducedMotion();
 
-  const feature = featureStyles[index]!;
-  const { bg, ink, accent, theme } = feature.palette;
-  const name = dict.styles.items[feature.id].name;
-  const total = featureStyles.length;
-  const go = (i: number) => setIndex((i + total) % total);
-
-  // Header/rail đổi màu chữ theo bảng màu hiện tại khi đang ở section này
-  useEffect(() => {
-    if (active.id === "styles" && active.theme !== theme) setActiveSection({ id: "styles", theme });
-  }, [active, theme]);
-
-  // Chỉ tự chạy khi section đang hiển thị
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const io = new IntersectionObserver(([entry]) => setInView(!!entry?.isIntersecting), {
-      threshold: 0.35,
+    const io = new IntersectionObserver(([e]) => setInView(!!e?.isIntersecting), {
+      threshold: 0.4,
     });
     io.observe(el);
     return () => io.disconnect();
   }, []);
 
-  useGSAP(
-    () => {
-      gsap.matchMedia().add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.fromTo(
-          ".st-ticker",
-          { xPercent: 0 },
-          {
-            xPercent: -30,
-            ease: "none",
-            scrollTrigger: {
-              trigger: ref.current,
-              start: "top bottom",
-              end: "bottom top",
-              scrub: 0.5,
-            },
-          },
-        );
-        gsap.from(".st-thumb", {
-          y: 40,
-          opacity: 0,
-          stagger: 0.08,
-          duration: 1.2,
-          ease: "expo.out",
-          scrollTrigger: {
-            trigger: ref.current?.querySelector(".st-thumbs"),
-            start: "top 92%",
-            once: true,
-          },
-        });
-      });
-    },
-    { scope: ref },
-  );
+  const s = featureStyles[active] ?? featureStyles[0];
+  const info = dict.styles.items[s.id];
+  const feat = dict.features.items[s.id];
+  const paused = userPaused || hovering || focusWithin || !inView;
 
-  const renderContent = (f: (typeof featureStyles)[number]) => {
-    const c = dict.features.items[f.id];
-    const fSpecs = [
-      [dict.features.hold, c.hold],
-      [dict.features.maintenance, c.maintenance],
-      [dict.features.faces, c.faces],
-      [dict.features.duration, c.duration],
-    ] as const;
-    return [
-      <p
-        key="k"
-        className="font-display text-xl italic md:text-2xl"
-        style={{ color: f.palette.accent }}
-      >
-        {c.kicker}
-      </p>,
-      <h3
-        key="n"
-        className="font-display mt-2 text-[clamp(3rem,6.5vw,6.5rem)] leading-[0.92] font-medium"
-      >
-        {dict.styles.items[f.id].name}
-      </h3>,
-      <p key="d" className="mt-7 max-w-md text-base leading-relaxed opacity-80 md:text-lg">
-        {c.description}
-      </p>,
-      <dl
-        key="s"
-        className="mt-9 grid grid-cols-2 gap-x-8 border-t"
-        style={{ borderColor: `${f.palette.ink}2e` }}
-      >
-        {fSpecs.map(([label, value]) => (
-          <div key={label} className="border-b py-4" style={{ borderColor: `${f.palette.ink}2e` }}>
-            <dt className="text-[10px] tracking-[0.28em] uppercase opacity-60">{label}</dt>
-            <dd className="font-display mt-1 text-lg md:text-xl">{value}</dd>
-          </div>
-        ))}
-      </dl>,
-    ];
+  // Tự chuyển kiểu sau AUTOPLAY_S giây (dừng khi hover/focus/ngoài màn hình/giảm chuyển động)
+  useEffect(() => {
+    if (paused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t = window.setTimeout(
+      () => setActive((i) => (i + 1) % featureStyles.length),
+      AUTOPLAY_S * 1000,
+    );
+    return () => window.clearTimeout(t);
+  }, [active, paused]);
+
+  const specs = [
+    [dict.features.hold, feat.hold],
+    [dict.features.maintenance, feat.maintenance],
+    [dict.features.faces, feat.faces],
+    [dict.features.duration, feat.duration],
+  ] as const;
+
+  const book = () => {
+    selectBooking({ kind: "style", id: s.id, title: info.name, meta: info.tags });
+    scrollToId("booking");
   };
-  const content = renderContent(feature);
 
   return (
     <Section
       ref={ref}
       id="styles"
-      theme={theme}
-      className="overflow-hidden pt-24 pb-24 transition-[background-color,color] duration-[1200ms] ease-[var(--ease-luxe)] md:pt-32 md:pb-32"
-      style={{ backgroundColor: bg, color: ink }}
-      onPointerEnter={() => setPaused(true)}
-      onPointerLeave={() => setPaused(false)}
+      theme="dark"
+      fit={false}
+      className="bg-espresso text-ivory overflow-hidden py-24 lg:pt-28 lg:pb-24"
     >
-      {/* Dải tên kiểu tóc chạy ngang theo cuộn */}
       <div
-        aria-hidden
-        className="pointer-events-none overflow-hidden whitespace-nowrap opacity-[0.12]"
+        className="mx-auto flex w-full max-w-[1600px] flex-col px-6 md:px-10 lg:px-16"
+        onMouseEnter={() => setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
+        onFocusCapture={() => setFocusWithin(true)}
+        onBlurCapture={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusWithin(false);
+        }}
       >
-        <div className="st-ticker font-display flex w-max items-center gap-10 text-[clamp(4rem,11vw,11rem)] leading-none italic">
-          {[...featureStyles, ...featureStyles].map((f, i) => (
-            <span key={i} className="flex items-center gap-10">
-              {dict.styles.items[f.id].name}
-              <LogoD tone="ivory" strandsOnly strandWidth={4} className="h-[0.5em] w-auto" />
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div className="relative mx-auto max-w-[1440px] px-6 md:px-10 lg:px-16">
-        {/* Tiêu đề section */}
-        <div className="-mt-6 flex flex-col justify-between gap-6 md:-mt-10 md:flex-row md:items-end">
-          <div>
+        {/* Hàng tiêu đề */}
+        <div className="flex shrink-0 flex-wrap items-end justify-between gap-6">
+          <h2 className="font-display text-[clamp(2.4rem,4.8vw,5rem)] leading-[0.95] font-normal">
+            {dict.styles.title}
+          </h2>
+          <div className="flex items-center gap-6">
+            <button
+              type="button"
+              onClick={() => setUserPaused((p) => !p)}
+              aria-pressed={userPaused}
+              className={cn(ctaGlass, "px-4 py-2.5 text-[13px] motion-reduce:hidden")}
+            >
+              {userPaused ? dict.styles.play : dict.styles.pause}
+            </button>
             <p
-              className="flex items-center gap-4 text-[11px] font-medium tracking-[0.32em] uppercase transition-colors duration-1000"
-              style={{ color: accent }}
+              className="font-display text-ivory/50 text-sm italic tabular-nums"
+              aria-live="polite"
             >
-              <span
-                className="h-px w-10 transition-colors duration-1000"
-                style={{ backgroundColor: accent }}
-              />
-              {dict.styles.eyebrow}
+              <span className="text-gold">{pad(active + 1)}</span> / {pad(featureStyles.length)}
             </p>
-            <SplitReveal
-              as="h2"
-              className="font-display mt-6 text-[clamp(2.6rem,5vw,4.8rem)] leading-[1]"
-            >
-              {dict.styles.title}
-            </SplitReveal>
           </div>
-          <p className="max-w-sm text-sm leading-relaxed opacity-75">{dict.styles.lead}</p>
         </div>
 
-        {/* Sân khấu chính */}
-        <div className="mt-14 grid items-center gap-14 md:mt-20 lg:grid-cols-12 lg:gap-10">
-          {/* Ảnh */}
-          <div className="relative mx-auto w-full max-w-[32rem] lg:col-span-6 lg:max-w-none">
-            <div
-              aria-hidden
-              className="absolute -inset-[10%] rounded-full lg:blur-3xl"
-              style={{ background: `radial-gradient(circle, ${accent}55 0%, transparent 65%)` }}
-            />
-            <div
-              className="arch relative aspect-[4/5] overflow-hidden"
-              style={{ backgroundColor: `${ink}14` }}
-            >
+        <div className="relative mt-8 grid grid-cols-[minmax(0,1fr)] gap-8 lg:mt-6 lg:h-[calc(100svh-14rem)] lg:max-h-[860px] lg:min-h-[560px] lg:grid-cols-12 lg:gap-10">
+          {/* Trái: tên kiểu tóc khổ lớn (chữ mọc lên từng ký tự) ở trên, lời dẫn + thông số ở dưới.
+              Tên KHÔNG đè lên ảnh — owner thấy chữ che mặt người mẫu rất kỳ. */}
+          <div className="relative z-20 order-2 lg:order-1 lg:col-span-3">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={s.id}
+                className="flex h-full flex-col justify-between gap-8"
+                exit={{ opacity: 0, y: -10, transition: { duration: 0.3 } }}
+              >
+                <div>
+                  <motion.p
+                    className="font-display text-gold text-lg italic tabular-nums"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1, transition: { duration: 0.6, delay: 0.1 } }}
+                  >
+                    {pad(active + 1)}
+                  </motion.p>
+                  <h3 className="font-display mt-2 text-[clamp(2.6rem,4.4vw,4.8rem)] leading-[0.92] font-light text-balance">
+                    {info.name.split(" ").map((word, w, words) => {
+                      const before = words.slice(0, w).join(" ").length;
+                      return (
+                        <span key={w} className="inline-block whitespace-nowrap">
+                          {[...word].map((ch, i) => (
+                            <span key={i} className="inline-block overflow-hidden pb-[0.1em]">
+                              <motion.span
+                                className="inline-block"
+                                initial={{ y: "105%" }}
+                                animate={{ y: 0 }}
+                                transition={{
+                                  duration: 0.9,
+                                  ease,
+                                  delay: 0.1 + (before + i) * 0.03,
+                                }}
+                              >
+                                {ch}
+                              </motion.span>
+                            </span>
+                          ))}
+                          {w < words.length - 1 && " "}
+                        </span>
+                      );
+                    })}
+                  </h3>
+                </div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0, transition: { duration: 0.7, ease, delay: 0.35 } }}
+                >
+                  <p className="font-display text-gold text-[clamp(1.25rem,1.6vw,1.6rem)] leading-snug italic">
+                    {feat.kicker}
+                  </p>
+                  <p className="text-ivory/70 mt-3 text-sm leading-relaxed">{feat.description}</p>
+                  <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4">
+                    {specs.map(([k, v]) => (
+                      <div key={k}>
+                        <dt className="text-ivory/50 text-[12px]">{k}</dt>
+                        <dd className="mt-1 text-[14px]">{v}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </motion.div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Giữa: khung CỐ ĐỊNH 3:4 cho mọi kiểu — cả 5 ảnh đều là chân dung dọc nên cùng kích thước,
+              phủ kín khung (cover), không viền mờ. */}
+          <div className="relative z-10 order-1 lg:order-2 lg:col-span-6 lg:min-h-0">
+            <div className="bg-ink relative mx-auto aspect-[3/4] h-[52svh] max-w-full overflow-hidden rounded-[28px] lg:h-full">
               <AnimatePresence initial={false}>
                 <motion.div
-                  key={feature.id}
+                  key={s.id}
                   className="absolute inset-0"
                   initial={{ clipPath: "inset(100% 0% 0% 0%)" }}
                   animate={{ clipPath: "inset(0% 0% 0% 0%)" }}
-                  exit={{ opacity: 0, transition: { duration: 0.4, delay: 0.6 } }}
+                  exit={{ opacity: 0, transition: { duration: 0.4, delay: 0.9 } }}
                   transition={{ duration: 1.1, ease: curtain }}
                 >
                   <motion.div
                     className="absolute inset-0"
-                    initial={{ scale: 1.25 }}
+                    initial={{ scale: 1.18 }}
                     animate={{ scale: 1 }}
-                    transition={{ duration: 1.8, ease: luxe }}
+                    transition={{ duration: 1.6, ease }}
                   >
                     <Image
-                      src={feature.image.src}
-                      alt={name}
+                      src={s.image.src}
+                      alt={info.name}
                       fill
-                      sizes="(min-width: 1024px) 50vw, (min-width: 640px) 512px, 100vw"
-                      className="object-cover object-[50%_25%]"
+                      sizes="(min-width: 1024px) 34vw, 90vw"
+                      loading="eager"
+                      className="object-cover"
+                      style={{ objectPosition: s.focus }}
                     />
                   </motion.div>
                 </motion.div>
               </AnimatePresence>
-            </div>
-
-            {/* Ảnh chi tiết */}
-            <div className="absolute -right-3 -bottom-8 w-[40%] md:-right-10 md:-bottom-12">
-              <div
-                className="relative aspect-[3/4] overflow-hidden rounded-[1.5rem] shadow-2xl transition-[outline-color] duration-1000"
-                style={{ outline: `8px solid ${bg}` }}
+              {/* Tải sẵn ảnh các kiểu còn lại → đổi kiểu không bị khung trống */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute size-px overflow-hidden opacity-0"
               >
-                <AnimatePresence initial={false}>
-                  <motion.div
-                    key={feature.id}
-                    className="absolute inset-0"
-                    initial={{ clipPath: "inset(0% 0% 100% 0%)" }}
-                    animate={{ clipPath: "inset(0% 0% 0% 0%)" }}
-                    exit={{ opacity: 0, transition: { duration: 0.4, delay: 0.7 } }}
-                    transition={{ duration: 1, ease: curtain, delay: 0.25 }}
-                  >
-                    <Image
-                      src={feature.detail.src}
-                      alt=""
-                      fill
-                      sizes="(min-width: 1024px) 20vw, 40vw"
-                      className="object-cover"
-                    />
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            </div>
-
-            {/* Số thứ tự */}
-            <p className="font-display absolute -top-8 left-0 text-sm tracking-[0.2em] tabular-nums">
-              <span style={{ color: accent }} className="transition-colors duration-1000">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <span className="opacity-50"> / {String(total).padStart(2, "0")}</span>
-            </p>
-          </div>
-
-          {/* Nội dung */}
-          <div className="relative lg:col-span-6 lg:col-start-7 xl:col-span-5 xl:col-start-8">
-            {/* Mọi biến thể nội dung xếp chồng (ẩn) trong cùng ô lưới → chiều cao = biến thể cao nhất,
-                tự chuyển kiểu không làm trang bị đẩy lên/xuống (CLS). */}
-            <div className="grid">
-              {featureStyles.map((f) => (
-                <div key={f.id} aria-hidden className="invisible [grid-area:1/1]">
-                  {renderContent(f).map((child, i) => (
-                    <div key={i}>{child}</div>
-                  ))}
-                </div>
-              ))}
-              <div className="[grid-area:1/1]">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={feature.id}
-                    initial="hidden"
-                    animate="show"
-                    exit="exit"
-                    variants={{
-                      hidden: {},
-                      show: { transition: { staggerChildren: 0.07, delayChildren: 0.15 } },
-                      exit: { opacity: 0, y: -16, transition: { duration: 0.35 } },
-                    }}
-                  >
-                    {content.map((child, i) => (
-                      <motion.div
-                        key={i}
-                        variants={{
-                          hidden: { opacity: 0, y: 28 },
-                          show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: luxe } },
-                        }}
-                      >
-                        {child}
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            </div>
-
-            <div className="mt-10 flex flex-wrap items-center gap-3 sm:gap-6">
-              <Magnetic>
-                <button
-                  type="button"
-                  onClick={() => scrollToId("contact")}
-                  className="group relative inline-flex items-center gap-3 overflow-hidden rounded-full px-6 py-4 text-[12px] font-semibold tracking-[0.16em] whitespace-nowrap uppercase transition-colors duration-1000 sm:gap-4 sm:px-8 sm:tracking-[0.24em]"
-                  style={{ backgroundColor: accent, color: bg }}
-                >
-                  <span className="relative z-10">{dict.features.cta}</span>
-                  <span className="relative z-10 transition-transform duration-500 group-hover:translate-x-1">
-                    →
-                  </span>
-                </button>
-              </Magnetic>
-              <div className="flex gap-2">
-                {[-1, 1].map((dir) => (
-                  <button
-                    key={dir}
-                    type="button"
-                    aria-label={dir < 0 ? "Previous" : "Next"}
-                    onClick={() => go(index + dir)}
-                    className="flex size-11 items-center justify-center rounded-full border transition-colors duration-500 hover:bg-current/10 sm:size-12"
-                    style={{ borderColor: `${ink}55` }}
-                  >
-                    {dir < 0 ? "←" : "→"}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Thumbnails + thanh tiến độ tự chuyển */}
-        <div
-          role="tablist"
-          aria-label={dict.styles.eyebrow}
-          className="st-thumbs -mx-6 mt-20 flex snap-x scroll-px-6 [scrollbar-width:none] gap-3 overflow-x-auto px-6 pb-2 md:-mx-10 md:mt-28 md:scroll-px-10 md:px-10 lg:mx-0 lg:grid lg:grid-cols-5 lg:overflow-visible lg:px-0"
-        >
-          {featureStyles.map((f, i) => {
-            const selected = i === index;
-            return (
-              <button
-                key={f.id}
-                role="tab"
-                type="button"
-                aria-selected={selected}
-                onClick={() => go(i)}
-                className="st-thumb group relative w-40 shrink-0 snap-start text-left md:w-48 lg:w-auto"
-              >
-                <span
-                  className={cn(
-                    "relative block aspect-[4/3] overflow-hidden rounded-2xl transition-opacity duration-700",
-                    selected ? "opacity-100" : "opacity-60 group-hover:opacity-90",
-                  )}
-                >
+                {featureStyles.map((it) => (
                   <Image
-                    src={f.image.src}
+                    key={it.id}
+                    src={it.image.src}
                     alt=""
-                    fill
-                    sizes="(min-width: 1024px) 18vw, 192px"
-                    className="object-cover object-[50%_25%] transition-transform duration-700 group-hover:scale-105"
+                    width={1}
+                    height={1}
+                    sizes="(min-width: 1024px) 34vw, 90vw"
+                    loading="eager"
                   />
-                  <span
-                    className="absolute top-3 left-3 size-3 rounded-full ring-2 ring-white/80"
-                    style={{ backgroundColor: f.palette.bg }}
-                  />
-                </span>
-                <span className="mt-3 flex items-baseline justify-between gap-3">
-                  <span
-                    className={cn(
-                      "font-display text-lg transition-opacity",
-                      selected ? "opacity-100" : "opacity-60",
-                    )}
-                  >
-                    {dict.styles.items[f.id].name}
-                  </span>
-                  <span className="text-[10px] tabular-nums opacity-50">0{i + 1}</span>
-                </span>
-                <span
-                  className="mt-2 block h-px w-full overflow-hidden"
-                  style={{ backgroundColor: `${ink}26` }}
-                >
-                  {selected && !reduced && (
-                    <span
-                      key={`${f.id}-${index}`}
-                      className="block h-full origin-left"
-                      style={{
-                        backgroundColor: accent,
-                        animation: `st-progress ${AUTOPLAY_SECONDS}s linear forwards`,
-                        animationPlayState: paused || !inView ? "paused" : "running",
-                      }}
-                      onAnimationEnd={() => go(index + 1)}
-                    />
-                  )}
-                </span>
-              </button>
-            );
-          })}
+                ))}
+              </span>
+              <span
+                className={cn(
+                  glassDark,
+                  "text-ivory absolute bottom-4 left-1/2 -translate-x-1/2 rounded-xl px-4 py-2 text-[12px] font-medium whitespace-nowrap",
+                )}
+              >
+                {info.tags}
+              </span>
+            </div>
+          </div>
+
+          {/* Phải: mục lục 5 kiểu + đặt lịch */}
+          <div className="relative z-20 order-3 flex flex-col justify-between gap-8 lg:col-span-3">
+            <ol className="flex [scrollbar-width:none] gap-2 overflow-x-auto lg:flex-col lg:gap-1.5 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
+              {featureStyles.map((it, i) => {
+                const on = i === active;
+                return (
+                  <li key={it.id} className="shrink-0">
+                    <button
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setActive(i)}
+                      className={cn(
+                        "group relative flex w-full items-center gap-4 rounded-2xl p-2 pr-4 text-left transition-[opacity,background-color,border-color] duration-500",
+                        "focus-visible:outline-gold focus-visible:outline-2 focus-visible:-outline-offset-2",
+                        on ? "bg-ivory/[0.06] opacity-100" : "opacity-50 hover:opacity-85",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "bg-ink relative h-14 w-11 shrink-0 overflow-hidden rounded-xl transition-all duration-300",
+                        )}
+                      >
+                        <Image
+                          src={it.image.src}
+                          alt=""
+                          fill
+                          sizes="44px"
+                          className="object-cover"
+                          style={{ objectPosition: it.focus }}
+                        />
+                      </span>
+                      <span className="min-w-0">
+                        <span
+                          className={cn(
+                            "font-display block text-xs italic tabular-nums transition-colors",
+                            on ? "text-gold" : "text-ivory/50",
+                          )}
+                        >
+                          {pad(i + 1)}
+                        </span>
+                        <span
+                          className={cn(
+                            "font-display block text-base leading-tight transition-colors xl:text-lg",
+                            on ? "text-ivory font-medium" : "text-ivory/80",
+                          )}
+                        >
+                          {dict.styles.items[it.id].name}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+
+            <button type="button" onClick={book} className={cn(ctaGold, "lg:self-end")}>
+              {dict.styles.cta}
+            </button>
+          </div>
         </div>
       </div>
     </Section>

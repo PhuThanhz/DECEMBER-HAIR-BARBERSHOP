@@ -44,7 +44,7 @@ export function Reveal({
   );
 
   return (
-    <Tag ref={ref} className={className}>
+    <Tag ref={ref} className={className} data-reveal="">
       {children}
     </Tag>
   );

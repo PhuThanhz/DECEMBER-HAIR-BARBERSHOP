@@ -6,7 +6,7 @@
 
 @layer base {
   html {
-    scroll-padding-top: 64px;
+    scroll-padding-top: var(--header-h, 84px);
     background: var(--color-ink);
     color: var(--color-ink);
     -webkit-font-smoothing: antialiased;
@@ -14,9 +14,9 @@
     text-rendering: optimizeLegibility;
   }
   body {
-    @apply bg-ivory font-sans;
+    @apply bg-ink font-sans;
   }
-  /* Playfair rộng hơn Cormorant → siết nhẹ khoảng chữ cho tiêu đề lớn */
+  /* Spectral: serif biên tập nét sắc — siết nhẹ khoảng chữ cho tiêu đề lớn */
   .font-display {
     letter-spacing: -0.015em;
     font-optical-sizing: auto;
@@ -39,46 +39,17 @@
   text-wrap: balance;
 }
 
-/* Film grain phủ toàn trang — tạo chất liệu như đá travertine */
+/* Film grain phủ toàn trang — tạo chất liệu như đá travertine cao cấp, tối ưu tĩnh không ngốn GPU */
 @utility grain {
   &::after {
     content: "";
     position: fixed;
-    inset: -18%;
+    inset: 0;
     pointer-events: none;
     z-index: 60;
     opacity: var(--grain-opacity);
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-    animation: grain 8s steps(10) infinite;
-  }
-  /* Màn hình cảm ứng / nhỏ: giữ hạt tĩnh — không bắt GPU composite lại lớp 136% viewport mãi mãi */
-  @media (pointer: coarse), (max-width: 767px) {
-    &::after {
-      animation: none;
-      inset: 0;
-    }
-  }
-}
-
-@keyframes grain {
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-  10% {
-    transform: translate(-5%, -10%);
-  }
-  30% {
-    transform: translate(3%, -15%);
-  }
-  50% {
-    transform: translate(12%, 9%);
-  }
-  70% {
-    transform: translate(9%, 4%);
-  }
-  90% {
-    transform: translate(-1%, 7%);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    transform: translateZ(0);
   }
 }
 
@@ -112,8 +83,10 @@
 
 .split-line {
   overflow: clip;
-  padding-bottom: 0.08em;
-  margin-bottom: -0.08em;
+  padding-top: 0.15em;
+  padding-bottom: 0.22em;
+  margin-top: -0.15em;
+  margin-bottom: -0.22em;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -144,4 +117,18 @@
   to {
     transform: scaleX(1);
   }
+}
+
+/* Bản đồ thương hiệu (MapLibre): nút +/− bo góc mềm, không viền đậm; chú thích bản quyền gọn */
+.brand-map .maplibregl-ctrl-group {
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgb(23 18 15 / 0.18);
+}
+.brand-map .maplibregl-ctrl-group button {
+  width: 38px;
+  height: 38px;
+}
+.brand-map .maplibregl-ctrl-attrib {
+  font-size: 10px;
 }

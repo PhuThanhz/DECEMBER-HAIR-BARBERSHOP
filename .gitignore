@@ -11,3 +11,9 @@ coverage
 .DS_Store
 next-env.d.ts
 *.tsbuildinfo
+
+# MapLibre worker, copied by apps/web/scripts/copy-maplibre-worker.mjs
+apps/web/public/vendor/
+
+# Video gốc (nặng) — web dùng bản nén trong apps/web/public/videos
+sources/*.mp4

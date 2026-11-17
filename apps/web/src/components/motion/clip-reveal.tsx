@@ -25,7 +25,7 @@ export function ClipReveal({
     () => {
       gsap.matchMedia().add("(prefers-reduced-motion: no-preference)", () => {
         const tl = gsap.timeline({
-          scrollTrigger: { trigger: ref.current, start: "top 80%", once: true },
+          scrollTrigger: { trigger: ref.current, start: "top 95%", once: true },
         });
         tl.fromTo(
           ref.current,
@@ -38,7 +38,7 @@ export function ClipReveal({
   );
 
   return (
-    <div ref={ref} className={cn("overflow-hidden", className)}>
+    <div ref={ref} className={cn("overflow-hidden", className)} data-reveal="">
       {children}
     </div>
   );

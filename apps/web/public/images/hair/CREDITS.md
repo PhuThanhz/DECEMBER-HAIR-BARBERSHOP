@@ -23,3 +23,9 @@ Thay bằng ảnh thật của tiệm khi có. https://unsplash.com/license
 | craft-chair.jpg          | IvQeAVeJULw | Allef Vinicius    |
 
 Photo URL: https://unsplash.com/photos/<Photo ID>
+
+## Ảnh do chủ tiệm cung cấp (11/2026)
+
+`craft-fade-bokeh`, `craft-taper-clipper`, `craft-clipper-detail`, `craft-razor-shave`, `craft-beard-clipper`,
+`craft-neck-razor`, `style-textured-crop`, `style-afro-fade`, `style-burst-fade`, `style-slick-low-fade`,
+`style-side-part-fade` — chưa rõ nguồn/giấy phép; kiểm tra quyền sử dụng trước khi phát hành.

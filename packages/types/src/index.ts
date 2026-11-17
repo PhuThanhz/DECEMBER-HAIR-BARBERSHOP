@@ -41,10 +41,14 @@ export interface SiteConfig {
   url: string;
   phone: string;
   whatsapp: string;
+  /** Link hệ thống đặt lịch online (phase 2); rỗng = dùng section #booking trên trang. */
+  bookingUrl: string;
   email: string;
   address: string;
   mapEmbedUrl: string;
   mapLink: string;
+  /** Sister hair-salon network (December Hair), linked from the footer. */
+  sisterSite: string;
   hours: OpeningHours[];
   socials: { label: string; href: string }[];
 }

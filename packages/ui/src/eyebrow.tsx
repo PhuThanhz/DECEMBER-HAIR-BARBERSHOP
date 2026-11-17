@@ -6,12 +6,11 @@ export function Eyebrow({ className, children, ...props }: ComponentPropsWithout
   return (
     <p
       className={cn(
-        "flex items-center gap-4 font-sans text-[11px] font-medium tracking-[0.32em] text-current/70 uppercase",
+        "font-sans text-[11px] font-medium tracking-[0.32em] text-current/70 uppercase",
         className,
       )}
       {...props}
     >
-      <span aria-hidden className="h-px w-10 bg-current/50" />
       {children}
     </p>
   );
