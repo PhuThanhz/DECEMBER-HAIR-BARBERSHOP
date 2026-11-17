@@ -3,6 +3,19 @@ import { site } from "@/content/site";
 import { locales, localeMeta, type Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries/en";
 
+/**
+ * Ảnh xem trước khi chia sẻ link (Zalo, Facebook, Messenger…): file JPG tĩnh, đường dẫn trơn không
+ * query, 1200×630 — Zalo hay bỏ qua ảnh sinh động (route opengraph-image) hoặc URL có "?".
+ * Nguồn: ảnh recepce + logo D + chữ Cinzel/Spectral (render 1 lần, lưu ở public/og/).
+ */
+const shareImage = {
+  url: "/og/december-barber.jpg",
+  width: 1200,
+  height: 630,
+  type: "image/jpeg",
+  alt: "December Barber — premium barber lounge, Václavské náměstí 1, Praha",
+};
+
 export function buildMetadata(locale: Locale, dict: Dictionary): Metadata {
   return {
     metadataBase: new URL(site.url),
@@ -25,11 +38,13 @@ export function buildMetadata(locale: Locale, dict: Dictionary): Metadata {
       siteName: site.name,
       title: dict.meta.title,
       description: dict.meta.description,
+      images: [shareImage],
     },
     twitter: {
       card: "summary_large_image",
       title: dict.meta.title,
       description: dict.meta.description,
+      images: [shareImage],
     },
     icons: {
       icon: [
