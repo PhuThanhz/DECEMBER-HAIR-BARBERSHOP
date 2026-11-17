@@ -93,6 +93,24 @@ export function Footer() {
             <p className="text-ivory/60 mt-8 max-w-sm text-[15px] leading-relaxed">
               {dict.meta.description}
             </p>
+
+            {/* Hệ thống cùng nhà: December Hair (kadeřnictví cho mọi người) — ô nhỏ màu xanh rừng của thương hiệu Hair */}
+            <p className="text-ivory/45 mt-8 text-[13px]">{dict.footer.family.kicker}</p>
+            <a
+              href={site.sisterSite}
+              target="_blank"
+              rel="noreferrer"
+              title={dict.footer.family.text}
+              aria-label={`${dict.footer.family.title} — ${dict.footer.family.text}`}
+              className="group mt-3 inline-flex items-baseline gap-3 rounded-xl bg-[#11261A] px-4 py-3 transition-colors duration-300 hover:bg-[#183824]"
+            >
+              <span className="font-display text-lg leading-none text-[#E6EFE8]">
+                {dict.footer.family.title}
+              </span>
+              <span className="text-[12px] leading-none text-[#8FB59A] transition-colors duration-300 group-hover:text-[#B5D4BD]">
+                decemberhair.cz
+              </span>
+            </a>
           </div>
 
           {/* Khám phá — 2 cột */}
@@ -131,7 +149,7 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href={`mailto:${site.email}`} className={link}>
+                <a href={`mailto:${site.email}`} className={`${link} [overflow-wrap:anywhere]`}>
                   {site.email}
                 </a>
               </li>

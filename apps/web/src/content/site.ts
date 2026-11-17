@@ -18,6 +18,8 @@ export const site: SiteConfig = {
   address: "Václavské náměstí 1, 110 00 Praha 1", // TODO
   mapEmbedUrl:
     "https://www.google.com/maps?q=V%C3%A1clavsk%C3%A9+n%C3%A1m%C4%9Bst%C3%AD+1,+110+00+Praha+1&z=16&output=embed", // TODO
+  /** Sesterská síť kadeřnictví (ženy, muži, děti) — odkaz v patičce. */
+  sisterSite: "https://decemberhair.cz/",
   mapLink: "https://maps.google.com/?q=50.0813,14.4268", // TODO
   hours: [
     { key: "weekdays", open: "9:00", close: "21:00" },

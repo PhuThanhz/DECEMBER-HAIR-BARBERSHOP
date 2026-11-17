@@ -47,6 +47,8 @@ export interface SiteConfig {
   address: string;
   mapEmbedUrl: string;
   mapLink: string;
+  /** Sister hair-salon network (December Hair), linked from the footer. */
+  sisterSite: string;
   hours: OpeningHours[];
   socials: { label: string; href: string }[];
 }

@@ -301,6 +301,11 @@ export const cs: Dictionary = {
     rights: "Všechna práva vyhrazena",
     visit: "Navštivte nás",
     backToTop: "Zpět nahoru",
+    family: {
+      kicker: "Z rodiny December",
+      title: "December Hair",
+      text: "Kadeřnictví pro ženy, muže i děti v Praze, Kladně a Mladé Boleslavi.",
+    },
   },
   images: {
     reception: "Recepce December Barber s policemi produktů a svítícím logem",

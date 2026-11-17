@@ -305,6 +305,11 @@ export const en = {
     rights: "All rights reserved",
     visit: "Visit",
     backToTop: "Back to top",
+    family: {
+      kicker: "The December family",
+      title: "December Hair",
+      text: "Hair salons for women, men and children in Prague, Kladno and Mladá Boleslav.",
+    },
   },
   images: {
     reception: "December Barber reception with product shelves and illuminated sign",
