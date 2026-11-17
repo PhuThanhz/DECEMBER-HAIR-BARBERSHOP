@@ -54,15 +54,22 @@ export function Header() {
       });
 
       setScrolled(window.scrollY > 60);
+      // quickSetter: ghi thẳng transform, không tạo tween mới ở mỗi khung hình cuộn
+      const setProgress = gsap.quickSetter(ref.current!.querySelector(".hd-progress"), "scaleX");
+      let hidden = false;
       const st = ScrollTrigger.create({
         start: 0,
         end: "max",
         onUpdate: (self) => {
           setScrolled(self.scroll() > 60);
-          gsap.set(".hd-progress", { scaleX: self.progress });
+          setProgress(self.progress);
           if (openRef.current) return;
+          const hide = self.direction === 1 && self.scroll() > 500;
+          // Chỉ tạo tween khi trạng thái ẩn/hiện thực sự đổi (trước đây: 1 tween / khung hình)
+          if (hide === hidden) return;
+          hidden = hide;
           gsap.to(ref.current, {
-            yPercent: self.direction === 1 && self.scroll() > 500 ? -100 : 0,
+            yPercent: hide ? -100 : 0,
             duration: 0.7,
             ease: "power3.out",
             overwrite: "auto",
@@ -105,7 +112,10 @@ export function Header() {
         className={cn(
           "fixed inset-x-0 top-0 z-50 transition-[color,background-color,backdrop-filter] duration-700 ease-[var(--ease-luxe)]",
           dark ? "text-ivory" : "text-ink",
-          scrolled && (dark ? "bg-ink/60 backdrop-blur-xl" : "bg-ivory/70 backdrop-blur-xl"),
+          scrolled &&
+            (dark
+              ? "bg-ink/75 lg:bg-ink/60 backdrop-blur-md lg:backdrop-blur-xl"
+              : "bg-ivory/85 lg:bg-ivory/70 backdrop-blur-md lg:backdrop-blur-xl"),
         )}
       >
         {/* Thanh thông tin */}

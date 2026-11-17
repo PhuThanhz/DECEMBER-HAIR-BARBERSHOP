@@ -55,7 +55,7 @@ export function MenuOverlay({ open, onClose }: { open: boolean; onClose: () => v
           role="dialog"
           aria-modal="true"
           aria-label={dict.common.menu}
-          className="bg-espresso text-ivory fixed inset-0 z-[70] flex flex-col overflow-hidden"
+          className="bg-espresso text-ivory fixed inset-0 z-[70] flex flex-col overflow-x-hidden overflow-y-auto overscroll-contain"
           initial={{ clipPath: "inset(0 0 100% 0)" }}
           animate={{ clipPath: "inset(0 0 0% 0)" }}
           exit={{ clipPath: "inset(100% 0 0% 0)" }}
@@ -70,7 +70,7 @@ export function MenuOverlay({ open, onClose }: { open: boolean; onClose: () => v
             className="pointer-events-none absolute top-1/2 -left-[20vh] h-[140vh] w-auto -translate-y-1/2 opacity-[0.12]"
           />
 
-          <div className="relative flex h-20 items-center justify-between px-5 md:h-24 md:px-10">
+          <div className="relative flex h-20 shrink-0 items-center justify-between px-5 md:h-24 md:px-10">
             <span className="text-gold text-[10px] tracking-[0.32em] uppercase">
               {dict.common.est}
             </span>
@@ -87,7 +87,7 @@ export function MenuOverlay({ open, onClose }: { open: boolean; onClose: () => v
             </button>
           </div>
 
-          <div className="relative mx-auto grid w-full max-w-[1600px] flex-1 items-center gap-10 px-5 md:px-10 lg:grid-cols-[1.3fr_1fr]">
+          <div className="relative mx-auto grid w-full max-w-[1600px] flex-1 shrink-0 items-center gap-10 px-5 md:px-10 lg:grid-cols-[1.3fr_1fr]">
             <nav aria-label={dict.common.menu}>
               <ul>
                 {items.map((id, i) => (
@@ -96,7 +96,7 @@ export function MenuOverlay({ open, onClose }: { open: boolean; onClose: () => v
                       href={`#${id}`}
                       onClick={go(id)}
                       onPointerEnter={() => setHovered(id)}
-                      className="group font-display flex items-baseline gap-5 py-1 text-[clamp(2.6rem,6.5vw,6rem)] leading-[1.05] font-normal"
+                      className="group font-display flex items-baseline gap-5 py-1 text-[clamp(2.6rem,6.5vw,6rem)] leading-[1.05] font-normal [@media(max-height:520px)]:text-[2rem]"
                       initial={{ y: "110%" }}
                       animate={{ y: 0 }}
                       exit={{ y: "-110%" }}
@@ -143,7 +143,7 @@ export function MenuOverlay({ open, onClose }: { open: boolean; onClose: () => v
           </div>
 
           <motion.div
-            className="border-ivory/10 text-ivory/60 relative mx-auto grid w-full max-w-[1600px] gap-6 border-t px-5 py-6 text-[11px] tracking-[0.22em] uppercase md:grid-cols-4 md:px-10"
+            className="border-ivory/10 text-ivory/60 relative mx-auto grid w-full max-w-[1600px] shrink-0 gap-6 border-t px-5 py-6 text-[11px] tracking-[0.22em] uppercase md:grid-cols-4 md:px-10"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0, transition: { delay: 0.8, duration: 0.8 } }}
             exit={{ opacity: 0 }}

@@ -35,7 +35,6 @@ export function Styles() {
 
   const feature = featureStyles[index]!;
   const { bg, ink, accent, theme } = feature.palette;
-  const copy = dict.features.items[feature.id];
   const name = dict.styles.items[feature.id].name;
   const total = featureStyles.length;
   const go = (i: number) => setIndex((i + total) % total);
@@ -90,39 +89,46 @@ export function Styles() {
     { scope: ref },
   );
 
-  const specs = [
-    [dict.features.hold, copy.hold],
-    [dict.features.maintenance, copy.maintenance],
-    [dict.features.faces, copy.faces],
-    [dict.features.duration, copy.duration],
-  ] as const;
-
-  const content = [
-    <p key="k" className="font-display text-xl italic md:text-2xl" style={{ color: accent }}>
-      {copy.kicker}
-    </p>,
-    <h3
-      key="n"
-      className="font-display mt-2 text-[clamp(3rem,6.5vw,6.5rem)] leading-[0.92] font-medium"
-    >
-      {name}
-    </h3>,
-    <p key="d" className="mt-7 max-w-md text-base leading-relaxed opacity-80 md:text-lg">
-      {copy.description}
-    </p>,
-    <dl
-      key="s"
-      className="mt-9 grid grid-cols-2 gap-x-8 border-t"
-      style={{ borderColor: `${ink}2e` }}
-    >
-      {specs.map(([label, value]) => (
-        <div key={label} className="border-b py-4" style={{ borderColor: `${ink}2e` }}>
-          <dt className="text-[10px] tracking-[0.28em] uppercase opacity-60">{label}</dt>
-          <dd className="font-display mt-1 text-lg md:text-xl">{value}</dd>
-        </div>
-      ))}
-    </dl>,
-  ];
+  const renderContent = (f: (typeof featureStyles)[number]) => {
+    const c = dict.features.items[f.id];
+    const fSpecs = [
+      [dict.features.hold, c.hold],
+      [dict.features.maintenance, c.maintenance],
+      [dict.features.faces, c.faces],
+      [dict.features.duration, c.duration],
+    ] as const;
+    return [
+      <p
+        key="k"
+        className="font-display text-xl italic md:text-2xl"
+        style={{ color: f.palette.accent }}
+      >
+        {c.kicker}
+      </p>,
+      <h3
+        key="n"
+        className="font-display mt-2 text-[clamp(3rem,6.5vw,6.5rem)] leading-[0.92] font-medium"
+      >
+        {dict.styles.items[f.id].name}
+      </h3>,
+      <p key="d" className="mt-7 max-w-md text-base leading-relaxed opacity-80 md:text-lg">
+        {c.description}
+      </p>,
+      <dl
+        key="s"
+        className="mt-9 grid grid-cols-2 gap-x-8 border-t"
+        style={{ borderColor: `${f.palette.ink}2e` }}
+      >
+        {fSpecs.map(([label, value]) => (
+          <div key={label} className="border-b py-4" style={{ borderColor: `${f.palette.ink}2e` }}>
+            <dt className="text-[10px] tracking-[0.28em] uppercase opacity-60">{label}</dt>
+            <dd className="font-display mt-1 text-lg md:text-xl">{value}</dd>
+          </div>
+        ))}
+      </dl>,
+    ];
+  };
+  const content = renderContent(feature);
 
   return (
     <Section
@@ -174,12 +180,12 @@ export function Styles() {
         </div>
 
         {/* Sân khấu chính */}
-        <div className="mt-14 grid items-center gap-14 md:mt-20 md:grid-cols-12 md:gap-10">
+        <div className="mt-14 grid items-center gap-14 md:mt-20 lg:grid-cols-12 lg:gap-10">
           {/* Ảnh */}
-          <div className="relative md:col-span-6">
+          <div className="relative mx-auto w-full max-w-[32rem] lg:col-span-6 lg:max-w-none">
             <div
               aria-hidden
-              className="absolute -inset-[10%] rounded-full blur-3xl transition-[background] duration-1000"
+              className="absolute -inset-[10%] rounded-full lg:blur-3xl"
               style={{ background: `radial-gradient(circle, ${accent}55 0%, transparent 65%)` }}
             />
             <div
@@ -205,7 +211,7 @@ export function Styles() {
                       src={feature.image.src}
                       alt={name}
                       fill
-                      sizes="(min-width: 768px) 50vw, 100vw"
+                      sizes="(min-width: 1024px) 50vw, (min-width: 640px) 512px, 100vw"
                       className="object-cover object-[50%_25%]"
                     />
                   </motion.div>
@@ -232,7 +238,7 @@ export function Styles() {
                       src={feature.detail.src}
                       alt=""
                       fill
-                      sizes="20vw"
+                      sizes="(min-width: 1024px) 20vw, 40vw"
                       className="object-cover"
                     />
                   </motion.div>
@@ -250,39 +256,52 @@ export function Styles() {
           </div>
 
           {/* Nội dung */}
-          <div className="relative md:col-span-5 md:col-start-8">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={feature.id}
-                initial="hidden"
-                animate="show"
-                exit="exit"
-                variants={{
-                  hidden: {},
-                  show: { transition: { staggerChildren: 0.07, delayChildren: 0.15 } },
-                  exit: { opacity: 0, y: -16, transition: { duration: 0.35 } },
-                }}
-              >
-                {content.map((child, i) => (
+          <div className="relative lg:col-span-6 lg:col-start-7 xl:col-span-5 xl:col-start-8">
+            {/* Mọi biến thể nội dung xếp chồng (ẩn) trong cùng ô lưới → chiều cao = biến thể cao nhất,
+                tự chuyển kiểu không làm trang bị đẩy lên/xuống (CLS). */}
+            <div className="grid">
+              {featureStyles.map((f) => (
+                <div key={f.id} aria-hidden className="invisible [grid-area:1/1]">
+                  {renderContent(f).map((child, i) => (
+                    <div key={i}>{child}</div>
+                  ))}
+                </div>
+              ))}
+              <div className="[grid-area:1/1]">
+                <AnimatePresence mode="wait">
                   <motion.div
-                    key={i}
+                    key={feature.id}
+                    initial="hidden"
+                    animate="show"
+                    exit="exit"
                     variants={{
-                      hidden: { opacity: 0, y: 28 },
-                      show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: luxe } },
+                      hidden: {},
+                      show: { transition: { staggerChildren: 0.07, delayChildren: 0.15 } },
+                      exit: { opacity: 0, y: -16, transition: { duration: 0.35 } },
                     }}
                   >
-                    {child}
+                    {content.map((child, i) => (
+                      <motion.div
+                        key={i}
+                        variants={{
+                          hidden: { opacity: 0, y: 28 },
+                          show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: luxe } },
+                        }}
+                      >
+                        {child}
+                      </motion.div>
+                    ))}
                   </motion.div>
-                ))}
-              </motion.div>
-            </AnimatePresence>
+                </AnimatePresence>
+              </div>
+            </div>
 
-            <div className="mt-10 flex items-center gap-6">
+            <div className="mt-10 flex flex-wrap items-center gap-3 sm:gap-6">
               <Magnetic>
                 <button
                   type="button"
                   onClick={() => scrollToId("contact")}
-                  className="group relative inline-flex items-center gap-4 overflow-hidden rounded-full px-8 py-4 text-[12px] font-semibold tracking-[0.24em] uppercase transition-colors duration-1000"
+                  className="group relative inline-flex items-center gap-3 overflow-hidden rounded-full px-6 py-4 text-[12px] font-semibold tracking-[0.16em] whitespace-nowrap uppercase transition-colors duration-1000 sm:gap-4 sm:px-8 sm:tracking-[0.24em]"
                   style={{ backgroundColor: accent, color: bg }}
                 >
                   <span className="relative z-10">{dict.features.cta}</span>
@@ -298,7 +317,7 @@ export function Styles() {
                     type="button"
                     aria-label={dir < 0 ? "Previous" : "Next"}
                     onClick={() => go(index + dir)}
-                    className="flex size-12 items-center justify-center rounded-full border transition-colors duration-500 hover:bg-current/10"
+                    className="flex size-11 items-center justify-center rounded-full border transition-colors duration-500 hover:bg-current/10 sm:size-12"
                     style={{ borderColor: `${ink}55` }}
                   >
                     {dir < 0 ? "←" : "→"}
@@ -313,7 +332,7 @@ export function Styles() {
         <div
           role="tablist"
           aria-label={dict.styles.eyebrow}
-          className="st-thumbs -mx-6 mt-20 flex snap-x [scrollbar-width:none] gap-3 overflow-x-auto px-6 pb-2 md:mx-0 md:mt-28 md:grid md:grid-cols-5 md:overflow-visible md:px-0"
+          className="st-thumbs -mx-6 mt-20 flex snap-x scroll-px-6 [scrollbar-width:none] gap-3 overflow-x-auto px-6 pb-2 md:-mx-10 md:mt-28 md:scroll-px-10 md:px-10 lg:mx-0 lg:grid lg:grid-cols-5 lg:overflow-visible lg:px-0"
         >
           {featureStyles.map((f, i) => {
             const selected = i === index;
@@ -324,7 +343,7 @@ export function Styles() {
                 type="button"
                 aria-selected={selected}
                 onClick={() => go(i)}
-                className="st-thumb group relative w-40 shrink-0 snap-start text-left md:w-auto"
+                className="st-thumb group relative w-40 shrink-0 snap-start text-left md:w-48 lg:w-auto"
               >
                 <span
                   className={cn(
@@ -336,7 +355,7 @@ export function Styles() {
                     src={f.image.src}
                     alt=""
                     fill
-                    sizes="(min-width: 768px) 18vw, 160px"
+                    sizes="(min-width: 1024px) 18vw, 192px"
                     className="object-cover object-[50%_25%] transition-transform duration-700 group-hover:scale-105"
                   />
                   <span

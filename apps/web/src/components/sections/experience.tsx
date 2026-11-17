@@ -17,7 +17,8 @@ export function Experience() {
 
   useGSAP(
     () => {
-      gsap.matchMedia().add("(prefers-reduced-motion: no-preference)", () => {
+      const mm = gsap.matchMedia();
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
         // Đếm số khi vào viewport
         gsap.utils.toArray<HTMLElement>(".stat-num").forEach((el) => {
           const end = Number(el.dataset.value);
@@ -30,8 +31,11 @@ export function Experience() {
             onUpdate: () => (el.textContent = String(Math.round(obj.v))),
           });
         });
+      });
 
-        // Khung ảnh lớn mở rộng dần khi cuộn
+      // Khung ảnh lớn mở rộng dần khi cuộn — chỉ từ tablet trở lên: trên mobile khung inset
+      // cắt mất nhãn số liệu và clip-path scrub phải vẽ lại ảnh 70vh ở mỗi khung hình.
+      mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
         gsap.fromTo(
           ".exp-frame",
           { clipPath: "inset(12% 18% 12% 18% round 400px 400px 0 0)" },
@@ -77,7 +81,7 @@ export function Experience() {
               className="group bg-travertine hover:bg-bone p-8 transition-colors duration-700 md:p-10"
             >
               <span className="font-display text-leather text-sm italic">0{i + 1}</span>
-              <h3 className="font-display mt-14 text-3xl font-normal">{e.title}</h3>
+              <h3 className="font-display mt-8 text-3xl font-normal md:mt-14">{e.title}</h3>
               <p className="text-ink/60 mt-4 text-sm leading-relaxed">{e.text}</p>
               <span className="bg-leather mt-8 block h-px w-8 transition-all duration-700 ease-[var(--ease-luxe)] group-hover:w-full" />
             </article>
@@ -120,8 +124,8 @@ export function Experience() {
             className="object-cover"
           />
         </Parallax>
-        <div className="from-ink/70 absolute inset-0 bg-gradient-to-t via-transparent to-transparent" />
-        <div className="text-ivory absolute inset-x-0 bottom-0 mx-auto grid max-w-[1440px] grid-cols-2 gap-8 px-6 pb-12 md:grid-cols-4 md:px-10 lg:px-16">
+        <div className="from-ink/85 via-ink/25 absolute inset-0 bg-gradient-to-t to-transparent" />
+        <div className="text-ivory absolute inset-x-0 bottom-0 mx-auto grid max-w-[1440px] grid-cols-2 gap-8 px-6 pb-28 md:grid-cols-4 md:px-10 md:pb-36 lg:px-16">
           {stats.map((s, i) => (
             <div key={i}>
               <p className="font-display text-5xl font-normal md:text-7xl">

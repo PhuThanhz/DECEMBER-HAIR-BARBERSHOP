@@ -57,7 +57,7 @@ Website được thiết kế theo phong cách **Quiet Architectural Luxury** �
 | `ink`        | `#17120F` | Nền tối sâu & chữ chính trên nền sáng          |
 | `gold`       | `#D9C27A` | Điểm nhấn champagne gold (logo, CTA, progress) |
 
-- **Display Font:** `Cormorant Garamond` (`--font-cormorant` → `--font-display`, hỗ trợ `latin-ext` cho dấu tiếng Séc `č, ř, ž, ů…`)
+- **Display Font:** `Playfair Display` (`--font-playfair` → `--font-display`, hỗ trợ `latin-ext` cho dấu tiếng Séc `č, ř, ž, ů…`)
 - **Body Font:** `Manrope` (`--font-manrope` → `--font-sans`, hỗ trợ `latin-ext`)
 
 ### Cấu trúc Landing Page (`src/app/[locale]/page.tsx`)
@@ -83,7 +83,7 @@ Website được thiết kế theo phong cách **Quiet Architectural Luxury** �
 apps/web/src/
 ├── app/
 │   ├── [locale]/
-│   │   ├── layout.tsx          # Fonts (Cormorant Garamond, Manrope), Metadata, Providers
+│   │   ├── layout.tsx          # Fonts (Playfair Display, Manrope), Metadata, Providers
 │   │   ├── page.tsx            # Landing page 6 sections + JSON-LD
 │   │   ├── opengraph-image.tsx # Dynamic OG image theo locale
 │   │   └── not-found.tsx
@@ -163,7 +163,7 @@ Mọi PR / push lên `main` đều được kiểm tra tự động qua GitHub A
 ### Giai đoạn 1 — Landing Page (`apps/web`)
 
 - [x] Monorepo `pnpm` + `Turborepo` + shared packages (`@december/config`, `@december/types`, `@december/ui`)
-- [x] Giao diện song ngữ `cs` / `en` với `Cormorant Garamond` + `Manrope` (`latin-ext`)
+- [x] Giao diện song ngữ `cs` / `en` với `Playfair Display` + `Manrope` (`latin-ext`)
 - [x] Hệ thống motion native-scroll (Preloader, SplitReveal, Parallax, ClipReveal, SectionTransitions)
 - [x] SEO metadata, dynamic OpenGraph image theo locale, `LocalBusiness` JSON-LD, `sitemap.xml`, `robots.txt`
 - [ ] Thay các thông tin `// TODO` trong `apps/web/src/content/site.ts` (SĐT, email, địa chỉ Praha, link Google Maps, MXH)

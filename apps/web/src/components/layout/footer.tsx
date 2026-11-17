@@ -69,7 +69,7 @@ export function Footer() {
 
       <p
         aria-hidden
-        className="font-display text-ivory/[0.06] mt-20 text-center text-[24vw] leading-[0.75] font-normal tracking-[-0.03em] whitespace-nowrap select-none"
+        className="font-display text-ivory/[0.06] mt-20 text-center text-[20vw] leading-[0.75] font-normal tracking-[-0.03em] whitespace-nowrap select-none"
       >
         December
       </p>
