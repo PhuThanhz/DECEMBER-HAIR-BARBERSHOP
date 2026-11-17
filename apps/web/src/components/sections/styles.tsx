@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Section } from "@/components/layout/section";
 import { featureStyles } from "@/content/hair";
 import { useDictionary } from "@/i18n/dictionary-provider";
@@ -10,6 +10,7 @@ import { useBookingSelection } from "@/lib/booking-selection";
 import { cn } from "@/lib/cn";
 import { scrollToId } from "@/lib/scroll";
 import { ctaGlass, ctaGold, glassDark } from "@/components/ui/cta";
+import { useNearViewport } from "@/hooks/use-near-viewport";
 
 /** Thời gian mỗi kiểu tóc được hiển thị khi tự chạy (giây). */
 const AUTOPLAY_S = 7;
@@ -32,6 +33,8 @@ export function Styles() {
   const [focusWithin, setFocusWithin] = useState(false);
   const [userPaused, setUserPaused] = useState(false);
   const [inView, setInView] = useState(false);
+  // Ảnh tải sẵn của 5 kiểu chỉ tải khi người dùng cuộn gần tới section (không tranh băng thông lúc mở trang)
+  const near = useNearViewport(ref);
 
   useEffect(() => {
     const el = ref.current;
@@ -45,7 +48,6 @@ export function Styles() {
 
   const s = featureStyles[active] ?? featureStyles[0];
   const info = dict.styles.items[s.id];
-  const feat = dict.features.items[s.id];
   const paused = userPaused || hovering || focusWithin || !inView;
 
   // Tự chuyển kiểu sau AUTOPLAY_S giây (dừng khi hover/focus/ngoài màn hình/giảm chuyển động)
@@ -58,12 +60,87 @@ export function Styles() {
     return () => window.clearTimeout(t);
   }, [active, paused]);
 
-  const specs = [
-    [dict.features.hold, feat.hold],
-    [dict.features.maintenance, feat.maintenance],
-    [dict.features.faces, feat.faces],
-    [dict.features.duration, feat.duration],
-  ] as const;
+  /**
+   * Khối chữ của một kiểu (số · tên · lời dẫn · thông số). `animated` = bản đang hiển thị;
+   * bản tĩnh dùng làm "khung đo" ẩn để giữ chiều cao cố định trên mobile/tablet.
+   */
+  const renderCopy = (index: number, animated: boolean) => {
+    const f = featureStyles[index]!;
+    const name = dict.styles.items[f.id].name;
+    const feat = dict.features.items[f.id];
+    const specs = [
+      [dict.features.hold, feat.hold],
+      [dict.features.maintenance, feat.maintenance],
+      [dict.features.faces, feat.faces],
+      [dict.features.duration, feat.duration],
+    ] as const;
+    const words = name.split(" ");
+    return (
+      <>
+        <div>
+          <motion.p
+            className="font-display text-gold text-lg italic tabular-nums"
+            {...(animated && {
+              initial: { opacity: 0 },
+              animate: { opacity: 1, transition: { duration: 0.6, delay: 0.1 } },
+            })}
+          >
+            {pad(index + 1)}
+          </motion.p>
+          <h3
+            aria-label={name}
+            className="font-display mt-2 text-[clamp(2.6rem,4.4vw,4.8rem)] leading-[0.92] font-light text-balance"
+          >
+            {words.map((word, w) => {
+              const before = words.slice(0, w).join(" ").length;
+              return (
+                <Fragment key={w}>
+                  {/* Dấu cách phải nằm NGOÀI span inline-block — bên trong sẽ bị nuốt ("SlickBack") */}
+                  {w > 0 && " "}
+                  <span aria-hidden className="inline-block whitespace-nowrap">
+                    {[...word].map((ch, i) => (
+                      <span key={i} className="inline-block overflow-hidden pb-[0.1em]">
+                        <motion.span
+                          className="inline-block"
+                          {...(animated && {
+                            initial: { y: "105%" },
+                            animate: { y: 0 },
+                            transition: { duration: 0.9, ease, delay: 0.1 + (before + i) * 0.03 },
+                          })}
+                        >
+                          {ch}
+                        </motion.span>
+                      </span>
+                    ))}
+                  </span>
+                </Fragment>
+              );
+            })}
+          </h3>
+        </div>
+
+        <motion.div
+          {...(animated && {
+            initial: { opacity: 0, y: 16 },
+            animate: { opacity: 1, y: 0, transition: { duration: 0.7, ease, delay: 0.35 } },
+          })}
+        >
+          <p className="font-display text-gold text-[clamp(1.25rem,1.6vw,1.6rem)] leading-snug italic">
+            {feat.kicker}
+          </p>
+          <p className="text-ivory/70 mt-3 text-sm leading-relaxed">{feat.description}</p>
+          <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4">
+            {specs.map(([k, v]) => (
+              <div key={k}>
+                <dt className="text-ivory/50 text-[12px]">{k}</dt>
+                <dd className="mt-1 text-[14px]">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </motion.div>
+      </>
+    );
+  };
 
   const book = () => {
     selectBooking({ kind: "style", id: s.id, title: info.name, meta: info.tags });
@@ -114,67 +191,31 @@ export function Styles() {
           {/* Trái: tên kiểu tóc khổ lớn (chữ mọc lên từng ký tự) ở trên, lời dẫn + thông số ở dưới.
               Tên KHÔNG đè lên ảnh — owner thấy chữ che mặt người mẫu rất kỳ. */}
           <div className="relative z-20 order-2 lg:order-1 lg:col-span-3">
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={s.id}
-                className="flex h-full flex-col justify-between gap-8"
-                exit={{ opacity: 0, y: -10, transition: { duration: 0.3 } }}
-              >
-                <div>
-                  <motion.p
-                    className="font-display text-gold text-lg italic tabular-nums"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1, transition: { duration: 0.6, delay: 0.1 } }}
-                  >
-                    {pad(active + 1)}
-                  </motion.p>
-                  <h3 className="font-display mt-2 text-[clamp(2.6rem,4.4vw,4.8rem)] leading-[0.92] font-light text-balance">
-                    {info.name.split(" ").map((word, w, words) => {
-                      const before = words.slice(0, w).join(" ").length;
-                      return (
-                        <span key={w} className="inline-block whitespace-nowrap">
-                          {[...word].map((ch, i) => (
-                            <span key={i} className="inline-block overflow-hidden pb-[0.1em]">
-                              <motion.span
-                                className="inline-block"
-                                initial={{ y: "105%" }}
-                                animate={{ y: 0 }}
-                                transition={{
-                                  duration: 0.9,
-                                  ease,
-                                  delay: 0.1 + (before + i) * 0.03,
-                                }}
-                              >
-                                {ch}
-                              </motion.span>
-                            </span>
-                          ))}
-                          {w < words.length - 1 && " "}
-                        </span>
-                      );
-                    })}
-                  </h3>
-                </div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0, transition: { duration: 0.7, ease, delay: 0.35 } }}
+            {/* Mọi kiểu xếp chồng (ẩn) trong cùng ô lưới → chiều cao = kiểu dài nhất: tự chuyển kiểu
+                không đẩy trang lên/xuống (CLS). Desktop (lg) khung đã cố định chiều cao nên bỏ. */}
+            <div className="grid lg:h-full">
+              {featureStyles.map((f, i) => (
+                <div
+                  key={f.id}
+                  aria-hidden
+                  inert
+                  className="invisible flex flex-col justify-between gap-8 [grid-area:1/1] lg:hidden"
                 >
-                  <p className="font-display text-gold text-[clamp(1.25rem,1.6vw,1.6rem)] leading-snug italic">
-                    {feat.kicker}
-                  </p>
-                  <p className="text-ivory/70 mt-3 text-sm leading-relaxed">{feat.description}</p>
-                  <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4">
-                    {specs.map(([k, v]) => (
-                      <div key={k}>
-                        <dt className="text-ivory/50 text-[12px]">{k}</dt>
-                        <dd className="mt-1 text-[14px]">{v}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </motion.div>
-              </motion.div>
-            </AnimatePresence>
+                  {renderCopy(i, false)}
+                </div>
+              ))}
+              <div className="[grid-area:1/1] lg:h-full">
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={s.id}
+                    className="flex h-full flex-col justify-between gap-8"
+                    exit={{ opacity: 0, y: -10, transition: { duration: 0.3 } }}
+                  >
+                    {renderCopy(active, true)}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
           </div>
 
           {/* Giữa: khung CỐ ĐỊNH 3:4 cho mọi kiểu — cả 5 ảnh đều là chân dung dọc nên cùng kích thước,
@@ -201,7 +242,6 @@ export function Styles() {
                       alt={info.name}
                       fill
                       sizes="(min-width: 1024px) 34vw, 90vw"
-                      loading="eager"
                       className="object-cover"
                       style={{ objectPosition: s.focus }}
                     />
@@ -213,17 +253,18 @@ export function Styles() {
                 aria-hidden
                 className="pointer-events-none absolute size-px overflow-hidden opacity-0"
               >
-                {featureStyles.map((it) => (
-                  <Image
-                    key={it.id}
-                    src={it.image.src}
-                    alt=""
-                    width={1}
-                    height={1}
-                    sizes="(min-width: 1024px) 34vw, 90vw"
-                    loading="eager"
-                  />
-                ))}
+                {near &&
+                  featureStyles.map((it) => (
+                    <Image
+                      key={it.id}
+                      src={it.image.src}
+                      alt=""
+                      width={1}
+                      height={1}
+                      sizes="(min-width: 1024px) 34vw, 90vw"
+                      loading="eager"
+                    />
+                  ))}
               </span>
               <span
                 className={cn(

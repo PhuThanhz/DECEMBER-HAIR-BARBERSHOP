@@ -42,8 +42,12 @@ export function BrandMap({
   useEffect(() => {
     let map: MapLibreMap | undefined;
     let cancelled = false;
+    const host = containerRef.current;
+    if (!host) return;
 
-    void (async () => {
+    // Chỉ tải MapLibre (JS + worker + style + tiles) khi bản đồ sắp vào màn hình —
+    // trước đây toàn bộ được tải ngay lúc mở trang dù bản đồ nằm ở cuối.
+    const init = async () => {
       try {
         const { Map, Marker, NavigationControl, setWorkerUrl } = await import("maplibre-gl");
         // Worker được chép sẵn vào public/vendor (scripts/copy-maplibre-worker.mjs)
@@ -77,10 +81,21 @@ export function BrandMap({
       } catch {
         if (!cancelled) setFailed(true);
       }
-    })();
+    };
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        io.disconnect();
+        void init();
+      },
+      { rootMargin: "800px" },
+    );
+    io.observe(host);
 
     return () => {
       cancelled = true;
+      io.disconnect();
       map?.remove();
     };
   }, [lng, lat, zoom]);

@@ -36,6 +36,14 @@ export function Hero() {
     a.style.opacity = "1";
     b.style.opacity = "0";
 
+    // Bản B chỉ bắt đầu tải sau khi A đã phát → lúc mở trang video chỉ tải 1 lần (trước đây 2 × 1.4MB)
+    const warmB = () => {
+      if (b.preload === "auto") return;
+      b.preload = "auto";
+      b.load();
+    };
+    a.addEventListener("playing", warmB, { once: true });
+
     const checkPlay = () => {
       const cur = vids[active]!;
       if (!isVisible || mq.matches) vids.forEach((v) => v.pause());
@@ -45,8 +53,14 @@ export function Hero() {
     const onTime = () => {
       const cur = vids[active]!;
       if (fading || !cur.duration || cur.currentTime < cur.duration - FADE) return;
-      fading = true;
       const next = vids[1 - active]!;
+      // Mạng chậm, bản kia chưa sẵn sàng → tua lại bản hiện tại thay vì mờ chéo vào khung trống
+      if (next.readyState < 3) {
+        warmB();
+        cur.currentTime = 0;
+        return;
+      }
+      fading = true;
       next.currentTime = 0;
       void next.play().catch(() => {});
       for (const v of vids) v.style.transition = `opacity ${FADE}s linear`;
@@ -76,6 +90,7 @@ export function Hero() {
       clearTimeout(timer);
       io.disconnect();
       mq.removeEventListener("change", checkPlay);
+      a.removeEventListener("playing", warmB);
       vids.forEach((v) => v.removeEventListener("timeupdate", onTime));
     };
   }, []);
@@ -159,7 +174,7 @@ export function Hero() {
             aria-hidden
             muted
             playsInline
-            preload="auto"
+            preload="none"
             className="absolute inset-0 size-full object-cover opacity-0"
           >
             <source src={heroVideo.src} type="video/mp4" />

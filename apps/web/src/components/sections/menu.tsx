@@ -10,6 +10,8 @@ import { spaceImages } from "@/content/images";
 import { formatPrice, serviceCategories, services, type ServiceId } from "@/content/services";
 import { useDictionary } from "@/i18n/dictionary-provider";
 import { useBookingSelection } from "@/lib/booking-selection";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { useNearViewport } from "@/hooks/use-near-viewport";
 import { scrollToId } from "@/lib/scroll";
 import { cn } from "@/lib/cn";
 
@@ -34,6 +36,11 @@ export function Menu() {
   const active = hovered ?? pinned;
   const reduce = useReducedMotion();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  // Khung xem trước chỉ có ở desktop (lg). Ảnh trong phần tử display:none vẫn bị tải nếu eager →
+  // chỉ tải sẵn khi đúng là desktop và đã cuộn gần tới Menu.
+  const sectionRef = useRef<HTMLElement>(null);
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const near = useNearViewport(sectionRef);
 
   const list = useMemo(
     () => services.filter((s) => filter === "all" || s.category === filter),
@@ -75,6 +82,7 @@ export function Menu() {
 
   return (
     <Section
+      ref={sectionRef}
       id="menu"
       theme="light"
       fit={false}
@@ -288,17 +296,18 @@ export function Menu() {
                 aria-hidden
                 className="pointer-events-none absolute size-px overflow-hidden opacity-0"
               >
-                {services.map((s) => (
-                  <Image
-                    key={s.id}
-                    src={s.image}
-                    alt=""
-                    width={1}
-                    height={1}
-                    sizes="40vw"
-                    loading="eager"
-                  />
-                ))}
+                {isDesktop &&
+                  near &&
+                  services.map((s) => (
+                    <Image
+                      key={s.id}
+                      src={s.image}
+                      alt=""
+                      width={1}
+                      height={1}
+                      sizes="(min-width: 1280px) 500px, 400px"
+                    />
+                  ))}
               </div>
 
               {/* Card xem trước cao cấp với ảnh trọn vẹn */}
@@ -323,7 +332,6 @@ export function Menu() {
                         src={current.image}
                         alt={dict.menu.items[current.id].name}
                         fill
-                        loading="eager"
                         sizes="(min-width: 1280px) 500px, 400px"
                         className="object-cover object-center"
                       />
